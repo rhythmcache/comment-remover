@@ -1,0 +1,29 @@
+[package]
+name = "comment-remover"
+version = "0.1.0"
+edition = "2024"
+authors = ["rhythmcache"]
+description = "Tool and library to remove comments from source codes"
+repository = "https://github.com/rhythmcache/comment-remover"
+readme = "README.md"
+license = "Apache-2.0"
+homepage = "https://github.com/rhythmcache/comment-remover"
+keywords = ["comments", "strip", "remove", "parser", "hash"]
+categories = ["command-line-utilities"]
+
+[lib]
+name = "comment_remover"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rmcm"
+path = "src/main.rs"
+
+[dependencies]
+
+[profile.release]
+strip = true
+lto = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
