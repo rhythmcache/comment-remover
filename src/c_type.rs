@@ -4,6 +4,54 @@ pub fn remove_c_type_comments(input: &str) -> String {
     let mut i = 0;
 
     while i < chars.len() {
+        // check for raw string literals: r#"..."# or r##"..."## etc.
+        if chars[i] == 'r' && i + 1 < chars.len() && chars[i + 1] == '#' {
+            result.push(chars[i]);
+            i += 1;
+
+            // count the number of # before the quote
+            let mut hash_count = 0;
+            while i < chars.len() && chars[i] == '#' {
+                result.push(chars[i]);
+                hash_count += 1;
+                i += 1;
+            }
+
+            // expect opening quote
+            if i < chars.len() && chars[i] == '"' {
+                result.push(chars[i]);
+                i += 1;
+
+                // copy until we find "#"* followed by the matching number of #'s and closing quote
+                while i < chars.len() {
+                    if chars[i] == '#' {
+                        // Check if this could be the closing sequence
+                        let mut j = i;
+                        let mut closing_hashes = 0;
+                        while j < chars.len() && chars[j] == '#' {
+                            closing_hashes += 1;
+                            j += 1;
+                        }
+
+                        // if we have the right number of hashes followed by quote, it's the end
+                        if closing_hashes == hash_count && j < chars.len() && chars[j] == '"' {
+                            // copy the closing #'s and quote
+                            while i < j {
+                                result.push(chars[i]);
+                                i += 1;
+                            }
+                            result.push(chars[i]); // closing quote
+                            i += 1;
+                            break;
+                        }
+                    }
+                    result.push(chars[i]);
+                    i += 1;
+                }
+            }
+            continue;
+        }
+
         if i + 1 < chars.len() && chars[i] == '/' && chars[i + 1] == '/' {
             i += 2;
             while i < chars.len() && chars[i] != '\n' {
@@ -15,6 +63,7 @@ pub fn remove_c_type_comments(input: &str) -> String {
             }
             continue;
         }
+
         if i + 1 < chars.len() && chars[i] == '/' && chars[i + 1] == '*' {
             i += 2;
             while i + 1 < chars.len() {
@@ -29,6 +78,7 @@ pub fn remove_c_type_comments(input: &str) -> String {
             }
             continue;
         }
+
         if chars[i] == '"' {
             result.push(chars[i]);
             i += 1;
@@ -47,6 +97,7 @@ pub fn remove_c_type_comments(input: &str) -> String {
             }
             continue;
         }
+
         if chars[i] == '\'' {
             result.push(chars[i]);
             i += 1;
@@ -65,6 +116,7 @@ pub fn remove_c_type_comments(input: &str) -> String {
             }
             continue;
         }
+
         result.push(chars[i]);
         i += 1;
     }
