@@ -1,6 +1,6 @@
 use clap::Parser;
 use comment_remover::{
-    remove_c_type_comments, remove_hash_comments_basic, remove_python_comments,
+    remove_c_type_comments, remove_hash_comments_basic, remove_js_comments, remove_python_comments,
     remove_shell_comments, xml_type_remover,
 };
 use std::fs;
@@ -14,6 +14,7 @@ enum Language {
     Python,
     HashBasic,
     Xml,
+    Js,
 }
 #[derive(Parser, Debug)]
 #[command(name = "comment_remover")]
@@ -32,8 +33,9 @@ struct Args {
 }
 fn parse_language(s: &str) -> Option<Language> {
     match s.to_lowercase().as_str() {
-        "c" | "c++" | "cpp" | "java" | "javascript" | "js" | "rust" | "rs" | "go" | "golang"
-        | "csharp" | "cs" | "swift" => Some(Language::C),
+        "c" | "c++" | "cpp" | "java" | "rust" | "rs" | "go" | "golang" | "csharp" | "cs"
+        | "swift" => Some(Language::C),
+        "javascript" | "typescript" | "js" | "ts" => Some(Language::Js),
         "shell" | "sh" | "bash" | "zsh" => Some(Language::Shell),
         "python" | "py" => Some(Language::Python),
         "hash" | "basic" => Some(Language::HashBasic),
@@ -45,9 +47,10 @@ fn detect_language(path: &str) -> Option<Language> {
     let path_obj = Path::new(path);
     let ext = path_obj.extension()?.to_str()?.to_lowercase();
     match ext.as_str() {
-        "c" | "h" | "cpp" | "cc" | "cxx" | "hpp" | "hxx" | "java" | "js" | "ts" | "jsx" | "tsx"
-        | "rs" | "go" | "cs" | "swift" | "kt" | "scala" | "m" | "mm" => Some(Language::C),
+        "c" | "h" | "cpp" | "cc" | "cxx" | "hpp" | "hxx" | "java" | "rs" | "go" | "cs"
+        | "swift" | "kt" | "scala" | "m" | "mm" => Some(Language::C),
         "sh" | "bash" | "zsh" | "ksh" => Some(Language::Shell),
+        "js" | "ts" | "jsx" | "tsx" => Some(Language::Js),
         "py" | "pyw" => Some(Language::Python),
         "rb" | "pl" | "pm" | "r" | "yaml" | "yml" | "toml" | "conf" | "cfg" | "ini" | "mk"
         | "makefile" => Some(Language::HashBasic),
@@ -62,6 +65,7 @@ fn remove_comments(input: &str, lang: Language) -> String {
         Language::Python => remove_python_comments(input),
         Language::HashBasic => remove_hash_comments_basic(input),
         Language::Xml => xml_type_remover(input),
+        Language::Js => remove_js_comments(input),
     }
 }
 fn collapse_whitespace(input: &str, max_newlines: usize) -> String {
