@@ -1,7 +1,7 @@
 use clap::Parser;
 use comment_remover::{
     remove_c_type_comments, remove_go_comments, remove_hash_comments_basic, remove_js_comments,
-    remove_python_comments, remove_shell_comments, xml_type_remover,
+    remove_python_comments, remove_rust_comments, remove_shell_comments, xml_type_remover,
 };
 use std::fs;
 use std::io::{self, Read, Write};
@@ -16,6 +16,7 @@ enum Language {
     Xml,
     Js,
     Go,
+    Rust,
 }
 #[derive(Parser, Debug)]
 #[command(name = "comment_remover")]
@@ -34,9 +35,8 @@ struct Args {
 }
 fn parse_language(s: &str) -> Option<Language> {
     match s.to_lowercase().as_str() {
-        "c" | "c++" | "cpp" | "java" | "rust" | "rs" | "csharp" | "cs" | "swift" => {
-            Some(Language::C)
-        }
+        "c" | "c++" | "cpp" | "java" | "csharp" | "cs" | "swift" => Some(Language::C),
+        "rs" | "rust" => Some(Language::Rust),
         "go" | "golang" => Some(Language::Go),
         "javascript" | "typescript" | "js" | "ts" => Some(Language::Js),
         "shell" | "sh" | "bash" | "zsh" => Some(Language::Shell),
@@ -50,8 +50,9 @@ fn detect_language(path: &str) -> Option<Language> {
     let path_obj = Path::new(path);
     let ext = path_obj.extension()?.to_str()?.to_lowercase();
     match ext.as_str() {
-        "c" | "h" | "cpp" | "cc" | "cxx" | "hpp" | "hxx" | "java" | "rs" | "cs" | "swift"
-        | "kt" | "scala" | "m" | "mm" => Some(Language::C),
+        "c" | "h" | "cpp" | "cc" | "cxx" | "hpp" | "hxx" | "java" | "cs" | "swift" | "kt"
+        | "scala" | "m" | "mm" => Some(Language::C),
+        "rs" | "rust" => Some(Language::Rust),
         "go" | "golang" => Some(Language::Go),
         "sh" | "bash" | "zsh" | "ksh" => Some(Language::Shell),
         "js" | "ts" | "jsx" | "tsx" => Some(Language::Js),
@@ -71,6 +72,7 @@ fn remove_comments(input: &str, lang: Language) -> String {
         Language::Xml => xml_type_remover(input),
         Language::Js => remove_js_comments(input),
         Language::Go => remove_go_comments(input),
+        Language::Rust => remove_rust_comments(input),
     }
 }
 fn collapse_whitespace(input: &str, max_newlines: usize) -> String {
