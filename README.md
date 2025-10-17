@@ -34,12 +34,12 @@ cat script.sh | rmcm -l shell
 
 Want to help? Here's what we're planning:
 
-- [ ] **XML/HTML** - Handle `<!-- comments -->`
+- [*] **XML/HTML** - Handle `<!-- comments -->`
 - [ ] **SQL** - Support `--` and `/* */` comments
 - [ ] **Ruby** - Add `#` comment support with heredoc
 - [ ] **Lua** - Handle `--` and `--[[ ]]` block comments
 - [ ] **Lisp/Clojure** - Support `;` comments
-- [ ] **Go** - Improve existing C-style support
+- [*] **Go** - Improve existing C-style support
 - [ ] **YAML** - Handle `#` comments properly
 - [ ] **LaTeX** - Support `%` comments
 - [ ] **Vim Script** - Handle `"` comments
