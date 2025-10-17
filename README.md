@@ -7,22 +7,22 @@ Strip comments from your code.
 ```bash
 cargo install --git "https://github.com/rhythmcache/comment-remover"
 ```
-<!--
+
 Usage :
+```
+rmcm [OPTIONS] [FILES]...
 
-```bash
-rmcm -l shell < script.sh > clean.sh
-rmcm -l python < script.py > clean.py
-rmcm -l c < main.c > clean.c
-rmcm -l basic < file.txt > clean.txt
+Arguments:
+  [FILES]...
+
+Options:
+  -l, --language <LANG>
+  -i, --in-place
+  -c, --collapse-whitespace <N>
+  -f, --force
+  -h, --help                     Print help
 ```
 
-Or pipe it directly:
-
-```bash
-cat script.sh | rmcm -l shell
-```
--->
 ## Supported Languages
 
 - **Shell** (`shell`) - Bash, Zsh, sh with full heredoc support
