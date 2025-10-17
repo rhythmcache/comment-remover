@@ -20,6 +20,7 @@ name = "rmcm"
 path = "src/main.rs"
 
 [dependencies]
+clap = { version = "4.5.49", features = ["derive"] }
 
 [profile.release]
 strip = true
