@@ -1,7 +1,7 @@
 use clap::Parser;
 use comment_remover::{
     remove_c_type_comments, remove_hash_comments_basic, remove_js_comments, remove_python_comments,
-    remove_shell_comments, xml_type_remover,
+    remove_shell_comments, xml_type_remover, remove_go_comments
 };
 use std::fs;
 use std::io::{self, Read, Write};
@@ -15,6 +15,7 @@ enum Language {
     HashBasic,
     Xml,
     Js,
+    Go,
 }
 #[derive(Parser, Debug)]
 #[command(name = "comment_remover")]
@@ -33,8 +34,9 @@ struct Args {
 }
 fn parse_language(s: &str) -> Option<Language> {
     match s.to_lowercase().as_str() {
-        "c" | "c++" | "cpp" | "java" | "rust" | "rs" | "go" | "golang" | "csharp" | "cs"
+        "c" | "c++" | "cpp" | "java" | "rust" | "rs" | "csharp" | "cs"
         | "swift" => Some(Language::C),
+        "go" | "golang" => Some(Language::Go),
         "javascript" | "typescript" | "js" | "ts" => Some(Language::Js),
         "shell" | "sh" | "bash" | "zsh" => Some(Language::Shell),
         "python" | "py" => Some(Language::Python),
@@ -47,8 +49,9 @@ fn detect_language(path: &str) -> Option<Language> {
     let path_obj = Path::new(path);
     let ext = path_obj.extension()?.to_str()?.to_lowercase();
     match ext.as_str() {
-        "c" | "h" | "cpp" | "cc" | "cxx" | "hpp" | "hxx" | "java" | "rs" | "go" | "cs"
+        "c" | "h" | "cpp" | "cc" | "cxx" | "hpp" | "hxx" | "java" | "rs" | "cs"
         | "swift" | "kt" | "scala" | "m" | "mm" => Some(Language::C),
+        "go" | "golang" =>  Some(Language::Go),
         "sh" | "bash" | "zsh" | "ksh" => Some(Language::Shell),
         "js" | "ts" | "jsx" | "tsx" => Some(Language::Js),
         "py" | "pyw" => Some(Language::Python),
@@ -66,6 +69,7 @@ fn remove_comments(input: &str, lang: Language) -> String {
         Language::HashBasic => remove_hash_comments_basic(input),
         Language::Xml => xml_type_remover(input),
         Language::Js => remove_js_comments(input),
+        Language::Go => remove_go_comments(input),
     }
 }
 fn collapse_whitespace(input: &str, max_newlines: usize) -> String {
