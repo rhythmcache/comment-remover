@@ -7,7 +7,7 @@ Strip comments from your code.
 ```bash
 cargo install --git "https://github.com/rhythmcache/comment-remover"
 ```
-
+<!--
 Usage :
 
 ```bash
@@ -22,7 +22,7 @@ Or pipe it directly:
 ```bash
 cat script.sh | rmcm -l shell
 ```
-
+-->
 ## Supported Languages
 
 - **Shell** (`shell`) - Bash, Zsh, sh with full heredoc support
