@@ -52,8 +52,8 @@ jobs:
         run: |
           Write-Host "Building for ${{ env.TARGET }}"
           if (Test-Path "build.rs") { Remove-Item "build.rs" }
-          cargo test 
-          cargo build --release --target ${{ env.TARGET }}
+          cargo test --all-features
+          cargo build --release --target ${{ env.TARGET }} --all-features
         env:
           RUSTFLAGS: -C target-feature=+crt-static
 
