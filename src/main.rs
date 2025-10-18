@@ -26,8 +26,6 @@ enum TreeSitterLanguage {
     Java,
     #[cfg(feature = "javascript")]
     JavaScript,
-    #[cfg(feature = "json")]
-    Json,
     #[cfg(feature = "lua")]
     Lua,
     #[cfg(feature = "php")]
@@ -44,8 +42,6 @@ enum TreeSitterLanguage {
     Swift,
     #[cfg(feature = "typescript")]
     TypeScript,
-    #[cfg(feature = "yaml")]
-    Yaml,
 }
 impl TreeSitterLanguage {
     fn get_language(&self) -> Language {
@@ -70,8 +66,6 @@ impl TreeSitterLanguage {
             TreeSitterLanguage::Java => tree_sitter_java::LANGUAGE.into(),
             #[cfg(feature = "javascript")]
             TreeSitterLanguage::JavaScript => tree_sitter_javascript::LANGUAGE.into(),
-            #[cfg(feature = "json")]
-            TreeSitterLanguage::Json => tree_sitter_json::LANGUAGE.into(),
             #[cfg(feature = "lua")]
             TreeSitterLanguage::Lua => tree_sitter_lua::LANGUAGE.into(),
             #[cfg(feature = "php")]
@@ -88,8 +82,6 @@ impl TreeSitterLanguage {
             TreeSitterLanguage::Swift => tree_sitter_swift::LANGUAGE.into(),
             #[cfg(feature = "typescript")]
             TreeSitterLanguage::TypeScript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
-            #[cfg(feature = "yaml")]
-            TreeSitterLanguage::Yaml => tree_sitter_yaml::LANGUAGE.into(),
         }
     }
 }
@@ -130,8 +122,6 @@ fn parse_language(s: &str) -> Result<TreeSitterLanguage, String> {
         "java" => Ok(TreeSitterLanguage::Java),
         #[cfg(feature = "javascript")]
         "javascript" | "js" => Ok(TreeSitterLanguage::JavaScript),
-        #[cfg(feature = "json")]
-        "json" => Ok(TreeSitterLanguage::Json),
         #[cfg(feature = "lua")]
         "lua" => Ok(TreeSitterLanguage::Lua),
         #[cfg(feature = "php")]
@@ -148,8 +138,6 @@ fn parse_language(s: &str) -> Result<TreeSitterLanguage, String> {
         "swift" => Ok(TreeSitterLanguage::Swift),
         #[cfg(feature = "typescript")]
         "typescript" | "ts" => Ok(TreeSitterLanguage::TypeScript),
-        #[cfg(feature = "yaml")]
-        "yaml" | "yml" => Ok(TreeSitterLanguage::Yaml),
         _ => Err(format!(
             "Language '{}' is not supported or not compiled in this build",
             s
@@ -180,8 +168,6 @@ fn detect_language(path: &str) -> Option<TreeSitterLanguage> {
         "java" => Some(TreeSitterLanguage::Java),
         #[cfg(feature = "javascript")]
         "js" | "jsx" | "mjs" | "cjs" => Some(TreeSitterLanguage::JavaScript),
-        #[cfg(feature = "json")]
-        "json" => Some(TreeSitterLanguage::Json),
         #[cfg(feature = "lua")]
         "lua" => Some(TreeSitterLanguage::Lua),
         #[cfg(feature = "php")]
@@ -198,8 +184,6 @@ fn detect_language(path: &str) -> Option<TreeSitterLanguage> {
         "swift" => Some(TreeSitterLanguage::Swift),
         #[cfg(feature = "typescript")]
         "ts" | "tsx" | "mts" | "cts" => Some(TreeSitterLanguage::TypeScript),
-        #[cfg(feature = "yaml")]
-        "yaml" | "yml" => Some(TreeSitterLanguage::Yaml),
         _ => None,
     }
 }
@@ -225,8 +209,6 @@ fn get_supported_languages() -> String {
     langs.push("java");
     #[cfg(feature = "javascript")]
     langs.push("javascript");
-    #[cfg(feature = "json")]
-    langs.push("json");
     #[cfg(feature = "lua")]
     langs.push("lua");
     #[cfg(feature = "php")]
@@ -243,8 +225,6 @@ fn get_supported_languages() -> String {
     langs.push("swift");
     #[cfg(feature = "typescript")]
     langs.push("typescript");
-    #[cfg(feature = "yaml")]
-    langs.push("yaml");
     if langs.is_empty() {
         "none (rebuild with language features enabled)".to_string()
     } else {
@@ -281,8 +261,6 @@ fn remove_comments_treesitter(input: &str, language: TreeSitterLanguage) -> Resu
         TreeSitterLanguage::Java => "(line_comment) @comment (block_comment) @comment",
         #[cfg(feature = "javascript")]
         TreeSitterLanguage::JavaScript => "(comment) @comment",
-        #[cfg(feature = "json")]
-        TreeSitterLanguage::Json => "",
         #[cfg(feature = "lua")]
         TreeSitterLanguage::Lua => "(comment) @comment",
         #[cfg(feature = "php")]
@@ -299,8 +277,6 @@ fn remove_comments_treesitter(input: &str, language: TreeSitterLanguage) -> Resu
         TreeSitterLanguage::Swift => "(comment) @comment",
         #[cfg(feature = "typescript")]
         TreeSitterLanguage::TypeScript => "(comment) @comment",
-        #[cfg(feature = "yaml")]
-        TreeSitterLanguage::Yaml => "",
     };
     if query_str.is_empty() {
         return Ok(input.to_string());
@@ -776,19 +752,5 @@ mod tests {
         let result = remove_comments_treesitter(input, TreeSitterLanguage::JavaScript).unwrap();
         assert!(result.contains("http://example.com"));
         assert!(result.contains("// not a comment"));
-    }
-    #[test]
-    #[cfg(feature = "json")]
-    fn test_json_no_comments() {
-        let input = r#"{"key": "value"}"#;
-        let result = remove_comments_treesitter(input, TreeSitterLanguage::Json).unwrap();
-        assert_eq!(result, input);
-    }
-    #[test]
-    #[cfg(feature = "yaml")]
-    fn test_yaml_no_comment_removal() {
-        let input = "# YAML comment\nkey: value";
-        let result = remove_comments_treesitter(input, TreeSitterLanguage::Yaml).unwrap();
-        assert_eq!(result, input);
     }
 }

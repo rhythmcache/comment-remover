@@ -30,7 +30,6 @@ tree-sitter-haskell = { version = "0.23.1", optional = true }
 tree-sitter-html = { version = "0.23.2", optional = true }
 tree-sitter-java = { version = "0.23.5", optional = true }
 tree-sitter-javascript = { version = "0.25.0", optional = true }
-tree-sitter-json = { version = "0.24.8", optional = true }
 tree-sitter-lua = { version = "0.2.0", optional = true }
 tree-sitter-php = { version = "0.24.2", optional = true }
 tree-sitter-python = { version = "0.25.0", optional = true }
@@ -39,7 +38,6 @@ tree-sitter-rust = { version = "0.24.0", optional = true }
 tree-sitter-scala = { version = "0.24.0", optional = true }
 tree-sitter-swift = { version = "0.7.1", optional = true }
 tree-sitter-typescript = { version = "0.23.2", optional = true }
-tree-sitter-yaml = { version = "0.7.2", optional = true }
 
 [features]
 default = ["c", "cpp", "rust-lang", "javascript", "python"]
@@ -55,7 +53,6 @@ haskell = ["dep:tree-sitter-haskell"]
 html = ["dep:tree-sitter-html"]
 java = ["dep:tree-sitter-java"]
 javascript = ["dep:tree-sitter-javascript"]
-json = ["dep:tree-sitter-json"]
 lua = ["dep:tree-sitter-lua"]
 php = ["dep:tree-sitter-php"]
 python = ["dep:tree-sitter-python"]
@@ -64,21 +61,19 @@ rust-lang = ["dep:tree-sitter-rust"]
 scala = ["dep:tree-sitter-scala"]
 swift = ["dep:tree-sitter-swift"]
 typescript = ["dep:tree-sitter-typescript"]
-yaml = ["dep:tree-sitter-yaml"]
 
 
 # for ease
-web = ["javascript", "typescript", "html", "css", "json"]
+web = ["javascript", "typescript", "html", "css"]
 web-backend = ["php", "ruby", "python"]
 jvm = ["java", "scala"]
 systems = ["c", "cpp", "rust-lang", "go"]
 scripting = ["bash", "python", "ruby", "lua"]
 dotnet = ["c-sharp"]
-config = ["json", "yaml"]
 all = [
     "bash", "c", "c-sharp", "cpp", "css", "go", "haskell", "html", "java",
-    "javascript", "json", "lua", "php", "python", "ruby",
-    "rust-lang", "scala", "swift", "typescript", "yaml"
+    "javascript", "lua", "php", "python", "ruby",
+    "rust-lang", "scala", "swift", "typescript"
 ]
 
 [profile.release]
