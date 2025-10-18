@@ -11,9 +11,6 @@ homepage = "https://github.com/rhythmcache/comment-remover"
 keywords = ["comments", "strip", "remove", "parser", "hash"]
 categories = ["command-line-utilities"]
 
-[lib]
-name = "comment_remover"
-path = "src/lib.rs"
 
 [[bin]]
 name = "rmcm"
@@ -21,6 +18,68 @@ path = "src/main.rs"
 
 [dependencies]
 clap = { version = "4.5.49", features = ["derive"] }
+tree-sitter = "0.25.10"
+
+tree-sitter-bash = { version = "0.25.0", optional = true }
+tree-sitter-c = { version = "0.24.1", optional = true }
+tree-sitter-c-sharp = { version = "0.23.1", optional = true }
+tree-sitter-cpp = { version = "0.23.4", optional = true }
+tree-sitter-css = { version = "0.25.0", optional = true }
+tree-sitter-go = { version = "0.25.0", optional = true }
+tree-sitter-haskell = { version = "0.23.1", optional = true }
+tree-sitter-html = { version = "0.23.2", optional = true }
+tree-sitter-java = { version = "0.23.5", optional = true }
+tree-sitter-javascript = { version = "0.25.0", optional = true }
+tree-sitter-json = { version = "0.24.8", optional = true }
+tree-sitter-lua = { version = "0.2.0", optional = true }
+tree-sitter-php = { version = "0.24.2", optional = true }
+tree-sitter-python = { version = "0.25.0", optional = true }
+tree-sitter-ruby = { version = "0.23.1", optional = true }
+tree-sitter-rust = { version = "0.24.0", optional = true }
+tree-sitter-scala = { version = "0.24.0", optional = true }
+tree-sitter-swift = { version = "0.7.1", optional = true }
+tree-sitter-typescript = { version = "0.23.2", optional = true }
+tree-sitter-yaml = { version = "0.7.2", optional = true }
+
+[features]
+default = ["c", "cpp", "rust-lang", "javascript", "python"]
+
+
+bash = ["dep:tree-sitter-bash"]
+c = ["dep:tree-sitter-c"]
+c-sharp = ["dep:tree-sitter-c-sharp"]
+cpp = ["dep:tree-sitter-cpp"]
+css = ["dep:tree-sitter-css"]
+go = ["dep:tree-sitter-go"]
+haskell = ["dep:tree-sitter-haskell"]
+html = ["dep:tree-sitter-html"]
+java = ["dep:tree-sitter-java"]
+javascript = ["dep:tree-sitter-javascript"]
+json = ["dep:tree-sitter-json"]
+lua = ["dep:tree-sitter-lua"]
+php = ["dep:tree-sitter-php"]
+python = ["dep:tree-sitter-python"]
+ruby = ["dep:tree-sitter-ruby"]
+rust-lang = ["dep:tree-sitter-rust"]
+scala = ["dep:tree-sitter-scala"]
+swift = ["dep:tree-sitter-swift"]
+typescript = ["dep:tree-sitter-typescript"]
+yaml = ["dep:tree-sitter-yaml"]
+
+
+# for ease
+web = ["javascript", "typescript", "html", "css", "json"]
+web-backend = ["php", "ruby", "python"]
+jvm = ["java", "scala"]
+systems = ["c", "cpp", "rust-lang", "go"]
+scripting = ["bash", "python", "ruby", "lua"]
+dotnet = ["c-sharp"]
+config = ["json", "yaml"]
+all = [
+    "bash", "c", "c-sharp", "cpp", "css", "go", "haskell", "html", "java",
+    "javascript", "json", "lua", "php", "python", "ruby",
+    "rust-lang", "scala", "swift", "typescript", "yaml"
+]
 
 [profile.release]
 strip = true
