@@ -25,7 +25,7 @@ jobs:
           targets: ${{ matrix.target }}
       
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} --all-features
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=/LTCG
       
@@ -96,7 +96,7 @@ jobs:
           fi
       
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} --all-features
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=-static -C link-arg=-no-pie
       
@@ -167,7 +167,7 @@ jobs:
           EOF
       
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.target }} --all-features
         env:
           RUSTFLAGS: -C link-arg=-static
       
