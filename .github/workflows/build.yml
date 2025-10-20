@@ -148,6 +148,21 @@ jobs:
         with:
           ndk-version: r29
           add-to-path: true
+
+      - name: Create symlinks for NDK toolchains
+        run: |
+         NDK_TOOLCHAIN="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+         cd "$NDK_TOOLCHAIN"
+         ln -sf aarch64-linux-android21-clang aarch64-linux-android-clang
+         ln -sf aarch64-linux-android21-clang++ aarch64-linux-android-clang++
+         ln -sf armv7a-linux-androideabi21-clang armv7a-linux-androideabi-clang
+         ln -sf armv7a-linux-androideabi21-clang++ armv7a-linux-androideabi-clang++
+         ln -sf arm-linux-androideabi21-clang arm-linux-androideabi-clang
+         ln -sf arm-linux-androideabi21-clang++ arm-linux-androideabi-clang++
+         ln -sf x86_64-linux-android21-clang x86_64-linux-android-clang
+         ln -sf x86_64-linux-android21-clang++ x86_64-linux-android-clang++
+         ln -sf i686-linux-android21-clang i686-linux-android-clang
+         ln -sf i686-linux-android21-clang++ i686-linux-android-clang++    
       
       - name: Setup cargo config
         run: |
