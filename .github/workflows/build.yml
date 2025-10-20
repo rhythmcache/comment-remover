@@ -25,7 +25,7 @@ jobs:
           targets: ${{ matrix.target }}
       
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }} --all-features
+        run: cargo build --release --target ${{ matrix.target }}
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=/LTCG
       
@@ -35,7 +35,7 @@ jobs:
           mkdir package
           cp target/${{ matrix.target }}/release/rmcm.exe package/
           cd package
-          7z a ../rmcm-windows-${{ matrix.arch }}.zip *
+          7z a ../comments-remover-windows-${{ matrix.arch }}.zip *
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -96,7 +96,7 @@ jobs:
           fi
       
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }} --all-features
+        run: cargo build --release --target ${{ matrix.target }}
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=-static -C link-arg=-no-pie
       
@@ -113,7 +113,7 @@ jobs:
           mkdir package
           cp target/${{ matrix.target }}/release/rmcm package/
           cd package
-          tar -czf ../rmcm-linux-${{ matrix.arch }}.tar.gz *
+          tar -czf ../comments-remover-linux-${{ matrix.arch }}.tar.gz *
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -167,7 +167,7 @@ jobs:
           EOF
       
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }} --all-features
+        run: cargo build --release --target ${{ matrix.target }}
         env:
           RUSTFLAGS: -C link-arg=-static
       
@@ -180,7 +180,7 @@ jobs:
           mkdir package
           cp target/${{ matrix.target }}/release/rmcm package/
           cd package
-          tar -czf ../rmcm-android-${{ matrix.arch }}.tar.gz *
+          tar -czf ../comments-remover-android-${{ matrix.arch }}.tar.gz *
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
