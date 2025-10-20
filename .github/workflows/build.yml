@@ -155,10 +155,10 @@ jobs:
          cd "$NDK_TOOLCHAIN"
          ln -sf aarch64-linux-android29-clang aarch64-linux-android-clang
          ln -sf aarch64-linux-android29-clang++ aarch64-linux-android-clang++
-         ln -sf armv7a-linux-androideabi21-clang armv7a-linux-androideabi-clang
-         ln -sf armv7a-linux-androideabi21-clang++ armv7a-linux-androideabi-clang++
-         ln -sf arm-linux-androideabi21-clang arm-linux-androideabi-clang
-         ln -sf arm-linux-androideabi21-clang++ arm-linux-androideabi-clang++
+         ln -sf armv7a-linux-androideabi29-clang armv7a-linux-androideabi-clang
+         ln -sf armv7a-linux-androideabi29-clang++ armv7a-linux-androideabi-clang++
+         ln -sf arm-linux-androideabi29-clang arm-linux-androideabi-clang
+         ln -sf arm-linux-androideabi29-clang++ arm-linux-androideabi-clang++
          ln -sf x86_64-linux-android29-clang x86_64-linux-android-clang
          ln -sf x86_64-linux-android29-clang++ x86_64-linux-android-clang++
          ln -sf i686-linux-android29-clang i686-linux-android-clang
@@ -172,7 +172,7 @@ jobs:
           linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang"
           
           [target.armv7-linux-androideabi]
-          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang"
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang"
           
           [target.x86_64-linux-android]
           linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang"
@@ -187,8 +187,8 @@ jobs:
          RUSTFLAGS: -C link-arg=-static
          CC_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang
          CXX_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang++
-         CC_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang
-         CXX_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi21-clang++
+         CC_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang
+         CXX_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang++
          CC_x86_64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang
          CXX_x86_64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang++
          CC_i686_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android29-clang
