@@ -1,6 +1,6 @@
 [package]
 name = "comment-remover"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["rhythmcache"]
 description = "CLI utility to remove comments from source codes"
