@@ -4,9 +4,14 @@ Strip comments from your code
 
 ## Install
 
-### Install all languages
+## Quick install through cargo binstall
 ```bash
-cargo install --git "https://github.com/rhythmcache/comment-remover" --all-features
+cargo binstall comment-remover
+```
+- or Build from source
+
+```bash
+cargo install comment-remover --all-features
 ```
 
 ### Install specific languages only
