@@ -15,9 +15,11 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        target:
-          - x86_64-pc-windows-msvc
-          - i686-pc-windows-msvc
+        include:
+          - arch: x86_64
+            target: x86_64-pc-windows-msvc
+          - arch: i686
+            target: i686-pc-windows-msvc
 
     steps:
       - uses: actions/checkout@v4
@@ -44,7 +46,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
+          name: windows-${{ matrix.target }}
           path: ${{ env.CRATE_NAME }}-v*-*.zip
 
   build-linux:
@@ -52,15 +54,19 @@ jobs:
     strategy:
       matrix:
         include:
-          - target: x86_64-unknown-linux-gnu
+          - arch: x86_64
+            target: x86_64-unknown-linux-gnu
             strip: strip
-          - target: i686-unknown-linux-gnu
+          - arch: i686
+            target: i686-unknown-linux-gnu
             strip: strip
             packages: gcc-multilib g++-multilib
-          - target: aarch64-unknown-linux-gnu
+          - arch: aarch64
+            target: aarch64-unknown-linux-gnu
             strip: aarch64-linux-gnu-strip
             packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-          - target: armv7-unknown-linux-gnueabihf
+          - arch: armv7
+            target: armv7-unknown-linux-gnueabihf
             strip: arm-linux-gnueabihf-strip
             packages: gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
 
@@ -83,7 +89,7 @@ jobs:
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=-static -C link-arg=-no-pie
 
-      - name: Strip
+      - name: Strip binary
         run: |
           ${{ matrix.strip }} target/${{ matrix.target }}/release/${BIN_NAME}
 
@@ -98,33 +104,79 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
+          name: linux-${{ matrix.target }}
           path: ${{ env.CRATE_NAME }}-v*-*.tar.gz
 
   build-android:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target:
-          - aarch64-linux-android
-          - armv7-linux-androideabi
-          - x86_64-linux-android
-          - i686-linux-android
+        include:
+          - arch: aarch64
+            target: aarch64-linux-android
+          - arch: armv7a
+            target: armv7-linux-androideabi
+          - arch: x86_64
+            target: x86_64-linux-android
+          - arch: i686
+            target: i686-linux-android
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
-      - uses: nttld/setup-ndk@v1
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
         with:
           ndk-version: r29
           add-to-path: true
 
+      - name: Create NDK clang symlinks
+        run: |
+          TOOLCHAIN="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          cd "$TOOLCHAIN"
+
+          ln -sf aarch64-linux-android29-clang aarch64-linux-android-clang
+          ln -sf aarch64-linux-android29-clang++ aarch64-linux-android-clang++
+
+          ln -sf armv7a-linux-androideabi29-clang armv7a-linux-androideabi-clang
+          ln -sf armv7a-linux-androideabi29-clang++ armv7a-linux-androideabi-clang++
+
+          ln -sf x86_64-linux-android29-clang x86_64-linux-android-clang
+          ln -sf x86_64-linux-android29-clang++ x86_64-linux-android-clang++
+
+          ln -sf i686-linux-android29-clang i686-linux-android-clang
+          ln -sf i686-linux-android29-clang++ i686-linux-android-clang++
+
+      - name: Setup cargo config
+        run: |
+          mkdir -p .cargo
+          cat > .cargo/config.toml << EOF
+          [target.aarch64-linux-android]
+          linker = "aarch64-linux-android-clang"
+
+          [target.armv7-linux-androideabi]
+          linker = "armv7a-linux-androideabi-clang"
+
+          [target.x86_64-linux-android]
+          linker = "x86_64-linux-android-clang"
+
+          [target.i686-linux-android]
+          linker = "i686-linux-android-clang"
+          EOF
+
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} --all-features
+
+      - name: Strip binary
+        run: |
+          ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip \
+            target/${{ matrix.target }}/release/${BIN_NAME}
 
       - name: Package
         run: |
@@ -147,7 +199,7 @@ jobs:
       contents: write
 
     steps:
-      - name: Download artifacts
+      - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: dist
@@ -160,8 +212,8 @@ jobs:
           body: |
             Automated release for ${{ github.ref_name }}
 
-            Windows and Linux assets are compatible with cargo-binstall.
-            Android assets are provided separately.
+            Windows and Linux builds support cargo-binstall.
+            Android builds are provided separately.
           files: |
             dist/**/*.zip
             dist/**/*.tar.gz
