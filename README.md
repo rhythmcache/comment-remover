@@ -19,10 +19,10 @@ for small binary sizes, install only the languages you need:
 
 ```bash
 # example: Install with Python and Rust support only
-cargo install --git "https://github.com/rhythmcache/comment-remover" --features "python,rust-lang"
+cargo install comment-remover --features "python,rust-lang"
 
 # example: install with JavaScript, TypeScript, and C support
-cargo install --git "https://github.com/rhythmcache/comment-remover" --features "javascript,typescript,c"
+cargo install comment-remover --features "javascript,typescript,c"
 ```
 
 ## Usage
