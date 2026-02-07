@@ -46,13 +46,13 @@ jobs:
           mkdir package
           cp target/${{ matrix.target }}/release/rmcm.exe package/
           cd package
-          7z a ../rmcm-${{ matrix.target }}-${VERSION}.zip *
+          7z a ../comment-remover-${{ matrix.target }}-${VERSION}.zip *
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
-          path: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.zip
+          name: comment-remover-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
+          path: comment-remover-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -134,13 +134,13 @@ jobs:
           mkdir package
           cp target/${{ matrix.target }}/release/rmcm package/
           cd package
-          tar -czf ../rmcm-${{ matrix.target }}-${VERSION}.tar.gz *
+          tar -czf ../comment-remover-${{ matrix.target }}-${VERSION}.tar.gz *
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
-          path: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          name: comment-remover-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
+          path: comment-remover-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
 
   build-macos:
     runs-on: macos-latest
@@ -180,13 +180,13 @@ jobs:
           mkdir package
           cp target/${{ matrix.target }}/release/rmcm package/
           cd package
-          tar -czf ../rmcm-${{ matrix.target }}-${VERSION}.tar.gz *
+          tar -czf ../comment-remover-${{ matrix.target }}-${VERSION}.tar.gz *
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
-          path: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          name: comment-remover-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
+          path: comment-remover-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
 
   build-android:
     runs-on: ubuntu-latest
@@ -284,13 +284,13 @@ jobs:
           mkdir package
           cp target/${{ matrix.target }}/release/rmcm package/
           cd package
-          tar -czf ../rmcm-${{ matrix.target }}-${VERSION}.tar.gz *
+          tar -czf ../comment-remover-${{ matrix.target }}-${VERSION}.tar.gz *
       
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
-          path: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
+          name: comment-remover-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
+          path: comment-remover-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
 
   release:
     needs: [build-windows, build-linux, build-macos, build-android]
@@ -324,7 +324,7 @@ jobs:
             
             #### Using cargo-binstall (Recommended)
             ```bash
-            cargo binstall rmcm
+            cargo binstall comment-remover
             ```
             
             #### Manual Installation
