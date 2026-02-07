@@ -6,10 +6,6 @@ on:
       - 'v*'
   workflow_dispatch:
 
-env:
-  CRATE_NAME: comment-remover
-  BIN_NAME: rmcm
-
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -20,34 +16,43 @@ jobs:
             target: x86_64-pc-windows-msvc
           - arch: i686
             target: i686-pc-windows-msvc
-
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
+      
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} --all-features
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=/LTCG
-
+      
+      - name: Get version from tag
+        id: get_version
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Package
         shell: bash
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
           mkdir package
-          cp target/${{ matrix.target }}/release/${BIN_NAME}.exe package/
+          cp target/${{ matrix.target }}/release/rmcm.exe package/
           cd package
-          7z a ../${CRATE_NAME}-v${VERSION}-${{ matrix.target }}.zip *
-
-      - name: Upload artifact
+          7z a ../rmcm-${{ matrix.target }}-${VERSION}.zip *
+      
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: windows-${{ matrix.target }}
-          path: ${{ env.CRATE_NAME }}-v*-*.zip
+          name: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
+          path: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.zip
 
   build-linux:
     runs-on: ubuntu-latest
@@ -56,56 +61,132 @@ jobs:
         include:
           - arch: x86_64
             target: x86_64-unknown-linux-gnu
-            strip: strip
+            gcc_prefix: x86_64-linux-gnu
+            packages: ""
           - arch: i686
             target: i686-unknown-linux-gnu
-            strip: strip
+            gcc_prefix: ""
             packages: gcc-multilib g++-multilib
           - arch: aarch64
             target: aarch64-unknown-linux-gnu
-            strip: aarch64-linux-gnu-strip
+            gcc_prefix: aarch64-linux-gnu
             packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           - arch: armv7
             target: armv7-unknown-linux-gnueabihf
-            strip: arm-linux-gnueabihf-strip
+            gcc_prefix: arm-linux-gnueabihf
             packages: gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
-
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
-      - name: Install cross toolchain
-        if: matrix.packages
+      
+      - name: Install cross-compilation toolchain
+        if: matrix.packages != ''
         run: |
           sudo apt-get update
           sudo apt-get install -y ${{ matrix.packages }}
-
+      
+      - name: Setup cargo config
+        if: matrix.arch != 'x86_64'
+        run: |
+          mkdir -p .cargo
+          if [ "${{ matrix.arch }}" = "i686" ]; then
+            cat > .cargo/config.toml << 'EOF'
+          [target.i686-unknown-linux-gnu]
+          linker = "gcc"
+          rustflags = ["-C", "link-arg=-m32"]
+          EOF
+          else
+            cat > .cargo/config.toml << EOF
+          [target.${{ matrix.target }}]
+          linker = "${{ matrix.gcc_prefix }}-gcc"
+          EOF
+          fi
+      
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} --all-features
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=-static -C link-arg=-no-pie
-
+      
       - name: Strip binary
         run: |
-          ${{ matrix.strip }} target/${{ matrix.target }}/release/${BIN_NAME}
-
+          if [ "${{ matrix.arch }}" = "x86_64" ] || [ "${{ matrix.arch }}" = "i686" ]; then
+            strip target/${{ matrix.target }}/release/rmcm
+          else
+            ${{ matrix.gcc_prefix }}-strip target/${{ matrix.target }}/release/rmcm
+          fi
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Package
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
           mkdir package
-          cp target/${{ matrix.target }}/release/${BIN_NAME} package/
+          cp target/${{ matrix.target }}/release/rmcm package/
           cd package
-          tar -czf ../${CRATE_NAME}-v${VERSION}-${{ matrix.target }}.tar.gz *
-
-      - name: Upload artifact
+          tar -czf ../rmcm-${{ matrix.target }}-${VERSION}.tar.gz *
+      
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: linux-${{ matrix.target }}
-          path: ${{ env.CRATE_NAME }}-v*-*.tar.gz
+          name: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
+          path: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
+
+  build-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            target: x86_64-apple-darwin
+          - arch: aarch64
+            target: aarch64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }} --all-features
+      
+      - name: Strip binary
+        run: strip target/${{ matrix.target }}/release/rmcm
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Package
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          mkdir package
+          cp target/${{ matrix.target }}/release/rmcm package/
+          cd package
+          tar -czf ../rmcm-${{ matrix.target }}-${VERSION}.tar.gz *
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
+          path: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
 
   build-android:
     runs-on: ubuntu-latest
@@ -120,15 +201,14 @@ jobs:
             target: x86_64-linux-android
           - arch: i686
             target: i686-linux-android
-
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
+      
       - name: Setup Android NDK
         uses: nttld/setup-ndk@v1
         id: setup-ndk
@@ -136,86 +216,144 @@ jobs:
           ndk-version: r29
           add-to-path: true
 
-      - name: Create NDK clang symlinks
+      - name: Create symlinks for NDK toolchains
         run: |
-          TOOLCHAIN="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          cd "$TOOLCHAIN"
-
-          ln -sf aarch64-linux-android29-clang aarch64-linux-android-clang
-          ln -sf aarch64-linux-android29-clang++ aarch64-linux-android-clang++
-
-          ln -sf armv7a-linux-androideabi29-clang armv7a-linux-androideabi-clang
-          ln -sf armv7a-linux-androideabi29-clang++ armv7a-linux-androideabi-clang++
-
-          ln -sf x86_64-linux-android29-clang x86_64-linux-android-clang
-          ln -sf x86_64-linux-android29-clang++ x86_64-linux-android-clang++
-
-          ln -sf i686-linux-android29-clang i686-linux-android-clang
-          ln -sf i686-linux-android29-clang++ i686-linux-android-clang++
-
+         NDK_TOOLCHAIN="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
+         cd "$NDK_TOOLCHAIN"
+         ln -sf aarch64-linux-android29-clang aarch64-linux-android-clang
+         ln -sf aarch64-linux-android29-clang++ aarch64-linux-android-clang++
+         ln -sf armv7a-linux-androideabi29-clang armv7a-linux-androideabi-clang
+         ln -sf armv7a-linux-androideabi29-clang++ armv7a-linux-androideabi-clang++
+         ln -sf arm-linux-androideabi29-clang arm-linux-androideabi-clang
+         ln -sf arm-linux-androideabi29-clang++ arm-linux-androideabi-clang++
+         ln -sf x86_64-linux-android29-clang x86_64-linux-android-clang
+         ln -sf x86_64-linux-android29-clang++ x86_64-linux-android-clang++
+         ln -sf i686-linux-android29-clang i686-linux-android-clang
+         ln -sf i686-linux-android29-clang++ i686-linux-android-clang++    
+      
       - name: Setup cargo config
         run: |
           mkdir -p .cargo
           cat > .cargo/config.toml << EOF
           [target.aarch64-linux-android]
-          linker = "aarch64-linux-android-clang"
-
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang"
+          
           [target.armv7-linux-androideabi]
-          linker = "armv7a-linux-androideabi-clang"
-
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang"
+          
           [target.x86_64-linux-android]
-          linker = "x86_64-linux-android-clang"
-
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang"
+          
           [target.i686-linux-android]
-          linker = "i686-linux-android-clang"
+          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android29-clang"
           EOF
-
+      
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} --all-features
-
+        env:
+         RUSTFLAGS: -C link-arg=-static
+         CC_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang
+         CXX_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang++
+         CC_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang
+         CXX_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang++
+         CC_x86_64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang
+         CXX_x86_64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang++
+         CC_i686_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android29-clang
+         CXX_i686_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android29-clang++
+         AR_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+         AR_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+         AR_x86_64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+         AR_i686_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+      
       - name: Strip binary
         run: |
-          ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip \
-            target/${{ matrix.target }}/release/${BIN_NAME}
-
+          ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip target/${{ matrix.target }}/release/rmcm
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Package
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
           mkdir package
-          cp target/${{ matrix.target }}/release/${BIN_NAME} package/
+          cp target/${{ matrix.target }}/release/rmcm package/
           cd package
-          tar -czf ../${CRATE_NAME}-android-v${VERSION}-${{ matrix.target }}.tar.gz *
-
-      - name: Upload artifact
+          tar -czf ../rmcm-${{ matrix.target }}-${VERSION}.tar.gz *
+      
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: android-${{ matrix.target }}
-          path: ${{ env.CRATE_NAME }}-android-v*.tar.gz
+          name: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}
+          path: rmcm-${{ matrix.target }}-${{ steps.get_version.outputs.VERSION }}.tar.gz
 
   release:
-    needs: [build-windows, build-linux, build-android]
+    needs: [build-windows, build-linux, build-macos, build-android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: dist
-
-      - name: Create GitHub Release
+          path: artifacts
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: "Release ${{ steps.get_version.outputs.VERSION }}"
           body: |
-            Automated release for ${{ github.ref_name }}
-
-            Windows and Linux builds support cargo-binstall.
-            Android builds are provided separately.
+            ## Release ${{ steps.get_version.outputs.VERSION }}
+            
+            ### Installation
+            
+            #### Using cargo-binstall (Recommended)
+            ```bash
+            cargo binstall rmcm
+            ```
+            
+            #### Manual Installation
+            Download the appropriate binary for your platform below.
+            
+            ### Supported Platforms
+            
+            **Windows**
+            - x86_64 (64-bit)
+            - i686 (32-bit)
+            
+            **macOS**
+            - x86_64 (Intel)
+            - aarch64 (Apple Silicon)
+            
+            **Linux**
+            - x86_64 (64-bit)
+            - i686 (32-bit)
+            - aarch64 (ARM 64-bit)
+            - armv7 (ARM 32-bit)
+            
+            **Android**
+            - aarch64
+            - armv7a
+            - x86_64
+            - i686
+            
           files: |
-            dist/**/*.zip
-            dist/**/*.tar.gz
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
