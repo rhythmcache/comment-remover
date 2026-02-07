@@ -6,237 +6,164 @@ on:
       - 'v*'
   workflow_dispatch:
 
+env:
+  CRATE_NAME: comment-remover
+  BIN_NAME: rmcm
+
 jobs:
   build-windows:
     runs-on: windows-latest
     strategy:
       matrix:
-        include:
-          - arch: x86_64
-            target: x86_64-pc-windows-msvc
-          - arch: i686
-            target: i686-pc-windows-msvc
+        target:
+          - x86_64-pc-windows-msvc
+          - i686-pc-windows-msvc
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      
+
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} --all-features
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=/LTCG
-      
+
       - name: Package
         shell: bash
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           mkdir package
-          cp target/${{ matrix.target }}/release/rmcm.exe package/
+          cp target/${{ matrix.target }}/release/${BIN_NAME}.exe package/
           cd package
-          7z a ../comments-remover-windows-${{ matrix.arch }}.zip *
-      
-      - name: Upload artifacts
+          7z a ../${CRATE_NAME}-v${VERSION}-${{ matrix.target }}.zip *
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: comments-remover-windows-${{ matrix.arch }}
-          path: comments-remover-windows-${{ matrix.arch }}.zip
+          name: ${{ matrix.target }}
+          path: ${{ env.CRATE_NAME }}-v*-*.zip
 
   build-linux:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - arch: x86_64
-            target: x86_64-unknown-linux-gnu
-            gcc_prefix: x86_64-linux-gnu
-            packages: ""
-          - arch: i686
-            target: i686-unknown-linux-gnu
-            gcc_prefix: ""
+          - target: x86_64-unknown-linux-gnu
+            strip: strip
+          - target: i686-unknown-linux-gnu
+            strip: strip
             packages: gcc-multilib g++-multilib
-          - arch: aarch64
-            target: aarch64-unknown-linux-gnu
-            gcc_prefix: aarch64-linux-gnu
+          - target: aarch64-unknown-linux-gnu
+            strip: aarch64-linux-gnu-strip
             packages: gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-          - arch: armv7
-            target: armv7-unknown-linux-gnueabihf
-            gcc_prefix: arm-linux-gnueabihf
+          - target: armv7-unknown-linux-gnueabihf
+            strip: arm-linux-gnueabihf-strip
             packages: gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      
-      - name: Install cross-compilation toolchain
-        if: matrix.packages != ''
+
+      - name: Install cross toolchain
+        if: matrix.packages
         run: |
           sudo apt-get update
           sudo apt-get install -y ${{ matrix.packages }}
-      
-      - name: Setup cargo config
-        if: matrix.arch != 'x86_64'
-        run: |
-          mkdir -p .cargo
-          if [ "${{ matrix.arch }}" = "i686" ]; then
-            cat > .cargo/config.toml << 'EOF'
-          [target.i686-unknown-linux-gnu]
-          linker = "gcc"
-          rustflags = ["-C", "link-arg=-m32"]
-          EOF
-          else
-            cat > .cargo/config.toml << EOF
-          [target.${{ matrix.target }}]
-          linker = "${{ matrix.gcc_prefix }}-gcc"
-          EOF
-          fi
-      
+
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} --all-features
         env:
           RUSTFLAGS: -C target-feature=+crt-static -C link-arg=-static -C link-arg=-no-pie
-      
-      - name: Strip binary
+
+      - name: Strip
         run: |
-          if [ "${{ matrix.arch }}" = "x86_64" ] || [ "${{ matrix.arch }}" = "i686" ]; then
-            strip target/${{ matrix.target }}/release/rmcm
-          else
-            ${{ matrix.gcc_prefix }}-strip target/${{ matrix.target }}/release/rmcm
-          fi
-      
+          ${{ matrix.strip }} target/${{ matrix.target }}/release/${BIN_NAME}
+
       - name: Package
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           mkdir package
-          cp target/${{ matrix.target }}/release/rmcm package/
+          cp target/${{ matrix.target }}/release/${BIN_NAME} package/
           cd package
-          tar -czf ../comments-remover-linux-${{ matrix.arch }}.tar.gz *
-      
-      - name: Upload artifacts
+          tar -czf ../${CRATE_NAME}-v${VERSION}-${{ matrix.target }}.tar.gz *
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: comments-remover-linux-${{ matrix.arch }}
-          path: comments-remover-linux-${{ matrix.arch }}.tar.gz
+          name: ${{ matrix.target }}
+          path: ${{ env.CRATE_NAME }}-v*-*.tar.gz
 
   build-android:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - arch: aarch64
-            target: aarch64-linux-android
-          - arch: armv7a
-            target: armv7-linux-androideabi
-          - arch: x86_64
-            target: x86_64-linux-android
-          - arch: i686
-            target: i686-linux-android
+        target:
+          - aarch64-linux-android
+          - armv7-linux-androideabi
+          - x86_64-linux-android
+          - i686-linux-android
+
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-      
-      - name: Setup Android NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
+
+      - uses: nttld/setup-ndk@v1
         with:
           ndk-version: r29
           add-to-path: true
 
-      - name: Create symlinks for NDK toolchains
-        run: |
-         NDK_TOOLCHAIN="${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin"
-         cd "$NDK_TOOLCHAIN"
-         ln -sf aarch64-linux-android29-clang aarch64-linux-android-clang
-         ln -sf aarch64-linux-android29-clang++ aarch64-linux-android-clang++
-         ln -sf armv7a-linux-androideabi29-clang armv7a-linux-androideabi-clang
-         ln -sf armv7a-linux-androideabi29-clang++ armv7a-linux-androideabi-clang++
-         ln -sf arm-linux-androideabi29-clang arm-linux-androideabi-clang
-         ln -sf arm-linux-androideabi29-clang++ arm-linux-androideabi-clang++
-         ln -sf x86_64-linux-android29-clang x86_64-linux-android-clang
-         ln -sf x86_64-linux-android29-clang++ x86_64-linux-android-clang++
-         ln -sf i686-linux-android29-clang i686-linux-android-clang
-         ln -sf i686-linux-android29-clang++ i686-linux-android-clang++    
-      
-      - name: Setup cargo config
-        run: |
-          mkdir -p .cargo
-          cat > .cargo/config.toml << EOF
-          [target.aarch64-linux-android]
-          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang"
-          
-          [target.armv7-linux-androideabi]
-          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang"
-          
-          [target.x86_64-linux-android]
-          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang"
-          
-          [target.i686-linux-android]
-          linker = "${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android29-clang"
-          EOF
-      
       - name: Build
         run: cargo build --release --target ${{ matrix.target }} --all-features
-        env:
-         RUSTFLAGS: -C link-arg=-static
-         CC_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang
-         CXX_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android29-clang++
-         CC_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang
-         CXX_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/armv7a-linux-androideabi29-clang++
-         CC_x86_64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang
-         CXX_x86_64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/x86_64-linux-android29-clang++
-         CC_i686_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android29-clang
-         CXX_i686_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/i686-linux-android29-clang++
-         AR_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-         AR_armv7_linux_androideabi: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-         AR_x86_64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-         AR_i686_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
-      
-      - name: Strip binary
-        run: |
-          ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip target/${{ matrix.target }}/release/rmcm
-      
+
       - name: Package
         run: |
+          VERSION="${GITHUB_REF_NAME#v}"
           mkdir package
-          cp target/${{ matrix.target }}/release/rmcm package/
+          cp target/${{ matrix.target }}/release/${BIN_NAME} package/
           cd package
-          tar -czf ../comments-remover-android-${{ matrix.arch }}.tar.gz *
-      
-      - name: Upload artifacts
+          tar -czf ../${CRATE_NAME}-android-v${VERSION}-${{ matrix.target }}.tar.gz *
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: comments-remover-android-${{ matrix.arch }}
-          path: comments-remover-android-${{ matrix.arch }}.tar.gz
+          name: android-${{ matrix.target }}
+          path: ${{ env.CRATE_NAME }}-android-v*.tar.gz
 
   release:
     needs: [build-windows, build-linux, build-android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
-      - name: Download all artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
-      
-      - name: Create Release
+          path: dist
+
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: "Build ${{ github.run_number }}"
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           body: |
-            
-            Automated build from workflow run #${{ github.run_number }}
-            
+            Automated release for ${{ github.ref_name }}
+
+            Windows and Linux assets are compatible with cargo-binstall.
+            Android assets are provided separately.
           files: |
-            artifacts/**/*.zip
-            artifacts/**/*.tar.gz
+            dist/**/*.zip
+            dist/**/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
