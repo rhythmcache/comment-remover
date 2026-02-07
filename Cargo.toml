@@ -76,6 +76,9 @@ all = [
     "rust-lang", "scala", "swift", "typescript"
 ]
 
+[package.metadata.binstall]
+bin-dir = "{ bin }"
+
 [profile.release]
 strip = true
 lto = true
