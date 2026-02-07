@@ -3,8 +3,7 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*'
-  workflow_dispatch:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'  # Match v1.0.0, v1.0.0-alpha, etc.
 
 jobs:
   build-windows:
@@ -32,12 +31,7 @@ jobs:
       - name: Get version from tag
         id: get_version
         shell: bash
-        run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
-          fi
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
       
       - name: Package
         shell: bash
@@ -121,12 +115,7 @@ jobs:
       
       - name: Get version from tag
         id: get_version
-        run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
-          fi
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
       
       - name: Package
         run: |
@@ -167,12 +156,7 @@ jobs:
       
       - name: Get version from tag
         id: get_version
-        run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
-          fi
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
       
       - name: Package
         run: |
@@ -271,12 +255,7 @@ jobs:
       
       - name: Get version from tag
         id: get_version
-        run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
-          fi
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
       
       - name: Package
         run: |
@@ -305,12 +284,7 @@ jobs:
       
       - name: Get version from tag
         id: get_version
-        run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-          else
-            echo "VERSION=v0.0.0-dev" >> $GITHUB_OUTPUT
-          fi
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
       
       - name: Create Release
         uses: softprops/action-gh-release@v2
