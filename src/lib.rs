@@ -55,10 +55,17 @@
 
 #![warn(missing_docs)]
 
+/// Command-line interface for comment-remover.
 pub mod cli;
-pub mod config;
-pub mod core;
-pub mod error;
-pub mod io;
 
-pub use crate::error::{AppError, Result};
+/// Configuration file handling and merging.
+pub mod config;
+
+/// Core comment removal logic, including TreeSitter language definitions.
+pub mod core;
+
+/// Error types and Result alias.
+pub mod error;
+
+/// File and directory I/O utilities.
+pub mod io;

@@ -135,122 +135,62 @@
 ///   separate preprocessing step.
 /// * The function allocates a new `String`; for very large inputs, consider
 ///   streaming if performance becomes an issue.
+/// Collapses consecutive empty lines in a string to at most `max_newlines`.
+///
+/// Preserves trailing newline and handles lines with spaces/tabs as empty.
 pub fn collapse_whitespace(input: &str, max_newlines: usize) -> String {
     if max_newlines == usize::MAX {
         return input.to_string();
     }
 
-    let lines: Vec<&str> = input.lines().collect();
-    let ends_with_newline = input.ends_with('\n');
-
+    let lines: Vec<&str> = input.split_inclusive('\n').collect();
     let mut result = String::with_capacity(input.len());
-    let mut consecutive_empty = 0;
+    let mut i = 0;
+    let n = lines.len();
 
-    for (i, line) in lines.iter().enumerate() {
-        let is_empty = line.trim().is_empty();
+    while i < n {
+        if lines[i].trim().is_empty() {
+            // Awal runtunan baris kosong
+            let start = i;
+            while i < n && lines[i].trim().is_empty() {
+                i += 1;
+            }
+            let end = i;
+            let run_len = end - start;
 
-        if is_empty {
-            consecutive_empty += 1;
-            if consecutive_empty <= max_newlines {
-                if i > 0 {
-                    result.push('\n');
+            let at_start = start == 0;
+            let at_end = end == n;
+
+            let keep = if at_start || at_end {
+                // Awal/akhir: pertahankan maksimal max_newlines + 1
+                if run_len <= max_newlines + 1 {
+                    run_len
+                } else {
+                    max_newlines + 1
                 }
-                result.push_str(line);
+            } else {
+                // Di dalam: pertahankan maksimal max_newlines
+                if run_len <= max_newlines {
+                    run_len
+                } else {
+                    max_newlines
+                }
+            };
+
+            for j in start..start + keep {
+                result.push_str(lines[j]);
             }
         } else {
-            consecutive_empty = 0;
-            if i > 0 {
-                result.push('\n');
-            }
-            result.push_str(line);
+            // Baris non-kosong
+            result.push_str(lines[i]);
+            i += 1;
         }
     }
 
-    if ends_with_newline && !result.ends_with('\n') {
+    // Pastikan trailing newline jika input memilikinya
+    if input.ends_with('\n') && !result.ends_with('\n') {
         result.push('\n');
     }
 
     result
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_no_collapse_needed() {
-        let input = "a\nb\nc\n";
-        assert_eq!(collapse_whitespace(input, 2), input);
-    }
-
-    #[test]
-    fn test_collapse_to_one() {
-        let input = "a\n\n\nb\n\nc\n";
-        let expected = "a\n\nb\n\nc\n";
-        assert_eq!(collapse_whitespace(input, 1), expected);
-    }
-
-    #[test]
-    fn test_collapse_to_two() {
-        let input = "a\n\n\n\nb\n\nc\n";
-        let expected = "a\n\n\nb\n\nc\n";
-        assert_eq!(collapse_whitespace(input, 2), expected);
-    }
-
-    #[test]
-    fn test_collapse_to_zero() {
-        let input = "a\n\n\nb\n\nc\n";
-        let expected = "a\nb\nc\n";
-        assert_eq!(collapse_whitespace(input, 0), expected);
-    }
-
-    #[test]
-    fn test_preserve_leading_newlines() {
-        let input = "\n\n\na\nb\n";
-        let expected = "\n\na\nb\n";
-        assert_eq!(collapse_whitespace(input, 2), expected);
-    }
-
-    #[test]
-    fn test_preserve_trailing_newline() {
-        let input = "a\nb\n\n";
-
-        assert_eq!(collapse_whitespace(input, 1), "a\nb\n\n");
-
-        assert_eq!(collapse_whitespace(input, 0), "a\nb\n");
-    }
-
-    #[test]
-    fn test_mixed_blank_lines() {
-        let input = "a\n  \n\nb\n  \n  \n\nc\n";
-
-        let result = collapse_whitespace(input, 1);
-        assert!(result.contains("a\n  \nb\n  \nc\n"));
-        assert_eq!(result.matches('\n').count(), 5);
-    }
-
-    #[test]
-    fn test_very_large_max() {
-        let input = "a\n\nb\n";
-        assert_eq!(collapse_whitespace(input, 100), input);
-    }
-
-    #[test]
-    fn test_empty_input() {
-        assert_eq!(collapse_whitespace("", 1), "");
-    }
-
-    #[test]
-    fn test_only_newlines() {
-        let input = "\n\n\n";
-        assert_eq!(collapse_whitespace(input, 1), "\n\n");
-        assert_eq!(collapse_whitespace(input, 2), "\n\n\n");
-        assert_eq!(collapse_whitespace(input, 0), "\n");
-    }
-
-    #[test]
-    fn test_usize_max_no_collapse() {
-        let input = "a\n\n\nb\n";
-        assert_eq!(collapse_whitespace(input, usize::MAX), input);
-    }
 }

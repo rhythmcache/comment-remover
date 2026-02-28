@@ -649,8 +649,3 @@ pub fn setup_logging(verbosity: u8, quiet: bool) {
         .with_writer(std::io::stdout)
         .init();
 }
-
-#[cfg(test)]
-mod tests {
-    // Tests are not included in this file; they would be in a separate test module.
-}

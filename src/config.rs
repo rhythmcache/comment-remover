@@ -221,9 +221,3 @@ impl Config {
         )
     }
 }
-
-#[cfg(test)]
-mod tests {
-    // Tests are located here to verify loading and merging behaviour.
-    // They use temporary files to avoid interfering with the real filesystem.
-}

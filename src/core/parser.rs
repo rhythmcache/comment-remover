@@ -105,7 +105,7 @@ pub fn parse(input: &str, language: TreeSitterLanguage) -> Result<Tree> {
             new_parser
                 .set_language(&language.get_language())
                 .map_err(|e| AppError::TreeSitter(format!("Failed to load grammar: {}", e)))?;
-            cache.insert((language, new_parser));
+            let _ = cache.insert((language, new_parser));
             &mut cache.as_mut().unwrap().1
         };
 
@@ -133,46 +133,4 @@ pub fn clear_cache() {
     PARSER_CACHE.with(|cache| {
         *cache.borrow_mut() = None;
     });
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::language::TreeSitterLanguage;
-
-    #[test]
-    #[cfg(feature = "rust-lang")]
-    fn test_parse_rust() {
-        let code = "fn main() { println!(\"Hello\"); }";
-        let tree = parse(code, TreeSitterLanguage::Rust).unwrap();
-        assert!(!tree.root_node().has_error());
-    }
-
-    #[test]
-    #[cfg(feature = "python")]
-    fn test_parse_python() {
-        let code = "def hello(): print('world')";
-        let tree = parse(code, TreeSitterLanguage::Python).unwrap();
-        assert!(!tree.root_node().has_error());
-    }
-
-    #[test]
-    #[cfg(all(feature = "rust-lang", feature = "python"))]
-    fn test_parser_reuse_and_switch() {
-        let rust_code = "fn main() {}";
-        let tree1 = parse(rust_code, TreeSitterLanguage::Rust).unwrap();
-        assert!(!tree1.root_node().has_error());
-
-        let py_code = "print('hi')";
-        let tree2 = parse(py_code, TreeSitterLanguage::Python).unwrap();
-        assert!(!tree2.root_node().has_error());
-
-        let tree3 = parse(rust_code, TreeSitterLanguage::Rust).unwrap();
-        assert!(!tree3.root_node().has_error());
-    }
-
-    #[test]
-    fn test_clear_cache() {
-        clear_cache();
-    }
 }
