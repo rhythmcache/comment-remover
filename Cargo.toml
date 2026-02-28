@@ -11,16 +11,25 @@ homepage = "https://github.com/rhythmcache/comment-remover"
 keywords = ["comments", "strip", "remove", "parser", "hash"]
 categories = ["command-line-utilities"]
 
-
 [[bin]]
 name = "rmcm"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.49", features = ["derive"] }
-tree-sitter = "0.25.10"
+clap = { version = "4.5.60", features = ["derive"] }
+num_cpus = "1.17.0"
+once_cell = "1.21.3"
+rayon = "1.11.0"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+strum = "0.28.0"
+strum_macros = "0.28.0"
+temp = "1.0.0"
+toml = "1.0.3"
+tracing = "0.1.44"
+tree-sitter = "0.26.1"
 
-tree-sitter-bash = { version = "0.25.0", optional = true }
+tree-sitter-bash = { version = "0.25.1", optional = true }
 tree-sitter-c = { version = "0.24.1", optional = true }
 tree-sitter-c-sharp = { version = "0.23.1", optional = true }
 tree-sitter-cpp = { version = "0.23.4", optional = true }
@@ -30,7 +39,7 @@ tree-sitter-haskell = { version = "0.23.1", optional = true }
 tree-sitter-html = { version = "0.23.2", optional = true }
 tree-sitter-java = { version = "0.23.5", optional = true }
 tree-sitter-javascript = { version = "0.25.0", optional = true }
-tree-sitter-lua = { version = "0.2.0", optional = true }
+tree-sitter-lua = { version = "0.5.0", optional = true }
 tree-sitter-php = { version = "0.24.2", optional = true }
 tree-sitter-python = { version = "0.25.0", optional = true }
 tree-sitter-ruby = { version = "0.23.1", optional = true }
@@ -39,10 +48,23 @@ tree-sitter-scala = { version = "0.24.0", optional = true }
 tree-sitter-swift = { version = "0.7.1", optional = true }
 tree-sitter-typescript = { version = "0.23.2", optional = true }
 
+tree-sitter-dart = { version = "0.0.4", optional = true }
+tree-sitter-elixir = { version = "0.3.4", optional = true }
+tree-sitter-ini = { version = "1.4.0", optional = true }
+tree-sitter-perl = { version = "1.1.2", optional = true }
+tree-sitter-r = { version = "1.2.0", optional = true }
+tree-sitter-sql = { version = "0.0.2", optional = true }
+tree-sitter-toml = { version = "0.20.0", optional = true }
+anyhow = "1.0.102"
+walkdir = "2.5.0"
+tempfile = "3.26.0"
+log = "0.4.29"
+similar = "2.7.0"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+thiserror = "2.0.18"
+
 [features]
 default = ["c", "cpp", "rust-lang", "javascript", "python"]
-
-
 bash = ["dep:tree-sitter-bash"]
 c = ["dep:tree-sitter-c"]
 c-sharp = ["dep:tree-sitter-c-sharp"]
@@ -62,18 +84,25 @@ scala = ["dep:tree-sitter-scala"]
 swift = ["dep:tree-sitter-swift"]
 typescript = ["dep:tree-sitter-typescript"]
 
+dart = ["dep:tree-sitter-dart"]
+elixir = ["dep:tree-sitter-elixir"]
+ini = ["dep:tree-sitter-ini"]
+perl = ["dep:tree-sitter-perl"]
+r = ["dep:tree-sitter-r"]
+sql = ["dep:tree-sitter-sql"]
+toml = ["dep:tree-sitter-toml"]
 
-# for ease
 web = ["javascript", "typescript", "html", "css"]
 web-backend = ["php", "ruby", "python"]
 jvm = ["java", "scala"]
 systems = ["c", "cpp", "rust-lang", "go"]
 scripting = ["bash", "python", "ruby", "lua"]
 dotnet = ["c-sharp"]
+
 all = [
     "bash", "c", "c-sharp", "cpp", "css", "go", "haskell", "html", "java",
-    "javascript", "lua", "php", "python", "ruby",
-    "rust-lang", "scala", "swift", "typescript"
+    "javascript", "lua", "php", "python", "ruby", "rust-lang", "scala", "swift",
+    "typescript", "dart", "elixir", "ini", "perl", "r", "sql", "toml"
 ]
 
 [package.metadata.binstall]
