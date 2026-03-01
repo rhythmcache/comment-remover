@@ -1,89 +1,190 @@
+//! Language support and detection for tree‑sitter based comment removal.
+//!
+//! This module defines the [`TreeSitterLanguage`] enum, which lists all
+//! programming languages that can be processed. Each variant is conditionally
+//! compiled based on the corresponding feature flag (e.g., `bash`, `python`).
+//! The module also provides:
+//!
+//! * Language detection from file extensions ([`detect_from_path`]).
+//! * Retrieval of the underlying tree‑sitter [`Language`] object ([`get_language`]).
+//! * A list of supported language names ([`supported`]).
+//! * String‑to‑language parsing with common aliases ([`from_str`]).
+//! * A global static map [`COMMENT_QUERIES`] that holds the tree‑sitter query
+//!   string for finding comments in each language.
+//!
+//! # Feature Flags
+//!
+//! Each language is gated by a Cargo feature. For example, to enable Rust
+//! support you must compile with the `rust-lang` feature. This allows you to
+//! control the binary size and only include the grammars you need.
+//!
+//! # Examples
+//!
+//! Detecting language from a file path:
+//!
+//! ```
+//! use comment_remover::core::language::TreeSitterLanguage;
+//! use std::path::Path;
+//!
+//! if let Some(lang) = TreeSitterLanguage::detect_from_path(Path::new("main.rs")) {
+//!     println!("Detected language: {:?}", lang);
+//! }
+//! ```
+//!
+//! Getting a language from a string (e.g., from CLI):
+//!
+//! ```
+//! use comment_remover::core::language::TreeSitterLanguage;
+//!
+//! let lang = TreeSitterLanguage::from_str("python").unwrap();
+//! assert_eq!(lang, TreeSitterLanguage::Python);
+//! ```
+//!
+//! Using the comment query for a language:
+//!
+//! ```
+//! use comment_remover::core::language::{COMMENT_QUERIES, TreeSitterLanguage};
+//!
+//! let query = COMMENT_QUERIES.get(&TreeSitterLanguage::Rust).unwrap();
+//! println!("Rust comment query: {}", query);
+//! ```
+
 use once_cell::sync::Lazy;
 use std::collections::HashMap;
 use std::path::Path;
 use strum_macros::EnumString;
 use tree_sitter::Language;
 
+/// Enumeration of all programming languages supported by the comment remover.
+///
+/// Each variant corresponds to a tree‑sitter grammar and is conditionally
+/// compiled only when its feature is enabled. The enum is `Copy`, `Clone`,
+/// and can be parsed from a string (case‑insensitive) via the `strum` derive.
+///
+/// # Variants
+///
+/// The list includes languages such as Rust, Python, JavaScript, etc.
+/// Refer to the Cargo features for the exact set available in your build.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumString)]
 #[strum(ascii_case_insensitive)]
 pub enum TreeSitterLanguage {
+    /// Bash / Shell scripts (feature = "bash")
     #[cfg(feature = "bash")]
     Bash,
 
+    /// C (feature = "c")
     #[cfg(feature = "c")]
     C,
 
+    /// C# (feature = "c-sharp")
     #[cfg(feature = "c-sharp")]
     CSharp,
 
+    /// C++ (feature = "cpp")
     #[cfg(feature = "cpp")]
     Cpp,
 
+    /// CSS (feature = "css")
     #[cfg(feature = "css")]
     Css,
 
+    /// Go (feature = "go")
     #[cfg(feature = "go")]
     Go,
 
+    /// Haskell (feature = "haskell")
     #[cfg(feature = "haskell")]
     Haskell,
 
+    /// HTML (feature = "html")
     #[cfg(feature = "html")]
     Html,
 
+    /// Java (feature = "java")
     #[cfg(feature = "java")]
     Java,
 
+    /// JavaScript (feature = "javascript")
     #[cfg(feature = "javascript")]
     JavaScript,
 
+    /// Lua (feature = "lua")
     #[cfg(feature = "lua")]
     Lua,
 
+    /// PHP (feature = "php")
     #[cfg(feature = "php")]
     Php,
 
+    /// Python (feature = "python")
     #[cfg(feature = "python")]
     Python,
 
+    /// Ruby (feature = "ruby")
     #[cfg(feature = "ruby")]
     Ruby,
 
+    /// Rust (feature = "rust-lang")
     #[cfg(feature = "rust-lang")]
     Rust,
 
+    /// Scala (feature = "scala")
     #[cfg(feature = "scala")]
     Scala,
 
+    /// Swift (feature = "swift")
     #[cfg(feature = "swift")]
     Swift,
 
+    /// TypeScript (feature = "typescript")
     #[cfg(feature = "typescript")]
     TypeScript,
 
+    /// SQL (feature = "sql")
     #[cfg(feature = "sql")]
     Sql,
 
+    /// Perl (feature = "perl")
     #[cfg(feature = "perl")]
     Perl,
 
+    /// R (feature = "r")
     #[cfg(feature = "r")]
     R,
 
+    /// Dart (feature = "dart")
     #[cfg(feature = "dart")]
     Dart,
 
+    /// Elixir (feature = "elixir")
     #[cfg(feature = "elixir")]
     Elixir,
 
+    /// TOML (feature = "toml")
     #[cfg(feature = "toml")]
     Toml,
 
+    /// INI / configuration files (feature = "ini")
     #[cfg(feature = "ini")]
     Ini,
 }
 
 impl TreeSitterLanguage {
+    /// Returns the underlying tree‑sitter `Language` object for this variant.
+    ///
+    /// This is used to configure a parser or to create queries. The method is
+    /// safe to call only when the corresponding feature is enabled; otherwise
+    /// the variant would not exist.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use comment_remover::core::language::TreeSitterLanguage;
+    /// use tree_sitter::Parser;
+    ///
+    /// let mut parser = Parser::new();
+    /// parser.set_language(&TreeSitterLanguage::Python.get_language()).unwrap();
+    /// ```
     pub fn get_language(&self) -> Language {
         match self {
             #[cfg(feature = "bash")]
@@ -140,6 +241,30 @@ impl TreeSitterLanguage {
         }
     }
 
+    /// Attempts to detect the programming language from a file path by its extension.
+    ///
+    /// The mapping is based on common file extensions (e.g., `.rs` → Rust,
+    /// `.py` → Python). If the extension is recognised and the corresponding
+    /// feature is enabled, `Some(lang)` is returned; otherwise `None`.
+    ///
+    /// # Arguments
+    ///
+    /// * `path` - A file path whose extension will be examined.
+    ///
+    /// # Returns
+    ///
+    /// * `Some(TreeSitterLanguage)` if a matching, enabled language is found.
+    /// * `None` if the extension is unknown or the language feature is disabled.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use comment_remover::core::language::TreeSitterLanguage;
+    /// use std::path::Path;
+    ///
+    /// let path = Path::new("script.py");
+    /// assert_eq!(TreeSitterLanguage::detect_from_path(path), Some(TreeSitterLanguage::Python));
+    /// ```
     pub fn detect_from_path(path: &Path) -> Option<Self> {
         let ext = path.extension()?.to_str()?.to_lowercase();
         match ext.as_str() {
@@ -198,6 +323,24 @@ impl TreeSitterLanguage {
         }
     }
 
+    /// Returns a list of all language names that are supported in the current build.
+    ///
+    /// The list is generated based on enabled features and includes both the
+    /// standard names (e.g., `"python"`) and common aliases. This is useful
+    /// for generating help text or error messages.
+    ///
+    /// # Returns
+    ///
+    /// A `Vec<&'static str>` containing the names of all enabled languages.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use comment_remover::core::language::TreeSitterLanguage;
+    ///
+    /// let supported = TreeSitterLanguage::supported();
+    /// println!("Supported languages: {}", supported.join(", "));
+    /// ```
     pub fn supported() -> Vec<&'static str> {
         let mut v = Vec::new();
         #[cfg(feature = "bash")]
@@ -253,6 +396,31 @@ impl TreeSitterLanguage {
         v
     }
 
+    /// Parses a string into a `TreeSitterLanguage`, accepting common aliases.
+    ///
+    /// This function first checks for common shorthand aliases (e.g., `"py"`
+    /// for Python) and then falls back to the case‑insensitive `strum` parse.
+    /// It returns a `Result` where the error contains a descriptive message.
+    ///
+    /// # Arguments
+    ///
+    /// * `s` - The language name or alias (e.g., `"rust"`, `"rs"`, `"c++"`).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(TreeSitterLanguage)` if the string matches a known, enabled language.
+    /// * `Err(String)` with an error message if the language is unknown or disabled.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use comment_remover::core::language::TreeSitterLanguage;
+    ///
+    /// assert!(TreeSitterLanguage::from_str("rust").is_ok());
+    /// assert!(TreeSitterLanguage::from_str("rs").is_ok());
+    /// assert!(TreeSitterLanguage::from_str("c++").is_ok());
+    /// assert!(TreeSitterLanguage::from_str("unknown").is_err());
+    /// ```
     pub fn from_str(s: &str) -> Result<Self, String> {
         let s_lower = s.to_lowercase();
         match s_lower.as_str() {
@@ -293,6 +461,23 @@ impl TreeSitterLanguage {
     }
 }
 
+/// A static map from language to the tree‑sitter query string that matches comments.
+///
+/// For each language, the query string captures all comment nodes (line comments,
+/// block comments, etc.) under the capture name `@comment`. The queries are
+/// used by [`CommentRemover`](crate::core::remover::CommentRemover) to locate
+/// comment ranges.
+///
+/// The map is lazily initialized on first access.
+///
+/// # Examples
+///
+/// ```
+/// use comment_remover::core::language::{COMMENT_QUERIES, TreeSitterLanguage};
+///
+/// let rust_query = COMMENT_QUERIES.get(&TreeSitterLanguage::Rust).unwrap();
+/// assert!(rust_query.contains("line_comment") || rust_query.contains("comment"));
+/// ```
 pub static COMMENT_QUERIES: Lazy<HashMap<TreeSitterLanguage, &'static str>> = Lazy::new(|| {
     let mut m = HashMap::new();
 
