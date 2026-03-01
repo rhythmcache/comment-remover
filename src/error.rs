@@ -1,10 +1,11 @@
 use std::io;
+use std::path::PathBuf;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum AppError {
-    #[error("I/O error: {0}")]
-    Io(#[from] io::Error),
+    #[error("I/O error on {path}: {source}")]
+    Io { path: PathBuf, source: io::Error },
 
     #[error("Tree-sitter error: {0}")]
     TreeSitter(String),
@@ -35,3 +36,10 @@ pub enum AppError {
 }
 
 pub type Result<T> = std::result::Result<T, AppError>;
+
+pub fn io_error(path: impl Into<PathBuf>, err: io::Error) -> AppError {
+    AppError::Io {
+        path: path.into(),
+        source: err,
+    }
+}
