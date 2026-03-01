@@ -3,47 +3,38 @@ pub fn collapse_whitespace(input: &str, max_newlines: usize) -> String {
         return input.to_string();
     }
 
-    let lines: Vec<&str> = input.split_inclusive('\n').collect();
     let mut result = String::with_capacity(input.len());
-    let mut i = 0;
-    let n = lines.len();
+    let mut empty_count = 0;
 
-    while i < n {
-        if lines[i].trim().is_empty() {
-            let start = i;
-            while i < n && lines[i].trim().is_empty() {
-                i += 1;
-            }
-            let end = i;
-            let run_len = end - start;
-
-            let at_start = start == 0;
-            let at_end = end == n;
-
-            let keep = if at_start || at_end {
-                if run_len <= max_newlines + 1 {
-                    run_len
-                } else {
-                    max_newlines + 1
-                }
-            } else {
-                if run_len <= max_newlines {
-                    run_len
+    for line in input.split_inclusive('\n') {
+        if line.trim().is_empty() {
+            empty_count += 1;
+        } else {
+            if empty_count > 0 {
+                let keep = if empty_count <= max_newlines {
+                    empty_count
                 } else {
                     max_newlines
+                };
+                for _ in 0..keep {
+                    result.push('\n');
                 }
-            };
-
-            for j in start..start + keep {
-                result.push_str(lines[j]);
+                empty_count = 0;
             }
-        } else {
-            result.push_str(lines[i]);
-            i += 1;
+            result.push_str(line);
         }
     }
 
-    if input.ends_with('\n') && !result.ends_with('\n') {
+    if empty_count > 0 {
+        let keep = if empty_count <= max_newlines {
+            empty_count
+        } else {
+            max_newlines
+        };
+        for _ in 0..keep {
+            result.push('\n');
+        }
+    } else if input.ends_with('\n') && !result.ends_with('\n') {
         result.push('\n');
     }
 
