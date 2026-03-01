@@ -263,7 +263,8 @@ pub fn collect_files(paths: &[PathBuf], recursive: bool) -> Result<Vec<PathBuf>>
             for entry in WalkDir::new(path)
                 .follow_links(true)
                 .into_iter()
-                .filter_map(|e| e.ok()) // Skip entries we cannot read (permission denied, etc.)
+                .filter_map(|e| e.ok())
+            // Skip entries we cannot read (permission denied, etc.)
             {
                 let entry_path = entry.path();
                 if entry_path.is_file() {

@@ -294,8 +294,6 @@ impl Cli {
             output_dir: output_dir.clone(),
             dry_run,
             diff,
-            json,
-            force,
             to_stdout,
         });
 
@@ -328,12 +326,7 @@ impl Cli {
         /// * `failed` – Number of files that failed.
         /// * `failures` – A slice of error-like items to display.
         /// * `json` – Whether to output JSON.
-        fn report_results(
-            success: usize,
-            failed: usize,
-            failures: &[impl ToString],
-            json: bool,
-        ) {
+        fn report_results(success: usize, failed: usize, failures: &[impl ToString], json: bool) {
             if json {
                 let summary = json!({
                     "success": success,
@@ -601,13 +594,6 @@ struct ProcessorConfig {
 
     /// Diff mode (implies dry run).
     diff: bool,
-
-    /// JSON output mode.
-    json: bool,
-
-    /// Force continue on errors.
-    force: bool,
-
     /// Whether to write output to stdout (only for single file).
     to_stdout: bool,
 }

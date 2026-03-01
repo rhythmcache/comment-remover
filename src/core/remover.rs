@@ -39,9 +39,9 @@
 //! # }
 //! ```
 
-use tree_sitter::{Query, QueryCursor, StreamingIterator};
 use std::fs;
 use std::path::Path;
+use tree_sitter::{Query, QueryCursor, StreamingIterator};
 
 use crate::core::language::{COMMENT_QUERIES, TreeSitterLanguage};
 use crate::core::parser;

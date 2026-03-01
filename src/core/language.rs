@@ -250,9 +250,6 @@ impl TreeSitterLanguage {
             Self::Toml => tree_sitter_toml::LANGUAGE.into(),
             #[cfg(feature = "ini")]
             Self::Ini => tree_sitter_ini::LANGUAGE.into(),
-            // The `_` arm is unreachable because all variants are covered by the
-            // features that are enabled; but it's required for exhaustiveness.
-            _ => panic!("TreeSitterLanguage variant is not enabled in this build"),
         }
     }
 
