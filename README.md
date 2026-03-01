@@ -10,18 +10,20 @@ It supports **dozens of languages**, works on single files or whole directories,
 
 ## Features
 
-- [x] **Accurate comment removal** – uses tree‑sitter’s precise syntax trees, so comments inside strings or literals are never touched.
-- [x] **40+ languages** – from C, Rust, Python to SQL, TOML, and even INI files. Enable only what you need.
-- [x] **Parallel processing** – automatically uses all CPU cores (configurable).
-- [x] **Recursive directory traversal** – process entire source trees with `-r`.
-- [x] **In‑place editing** – overwrite files directly with `-i`.
-- [x] **Output directory** – write cleaned files to a separate folder, preserving the relative structure.
-- [x] **Whitespace collapsing** – reduce consecutive blank lines to a desired maximum with `-c`.
-- [x] **Diff mode** – see what would change without modifying files (`--diff`).
-- [x] **Dry‑run** – preview which files would be processed.
-- [ ] **JSON output** – integrate with editors or build tools.
-- [x] **Configuration file** – store default options in `.rmcm.toml`.
-- [ ] **Force continue** – keep going even if some files fail (`-f`).
+- ✅ **Accurate comment removal** – uses tree‑sitter’s precise syntax trees, so comments inside strings or literals are never touched.
+- ✅ **40+ languages** – from C, Rust, Python to SQL, TOML, and even INI files. Enable only what you need (feature flags).
+- ✅ **Parallel processing** – automatically uses all CPU cores (configurable with `--threads`).
+- ✅ **Recursive directory traversal** – process entire source trees with `-r` / `--recursive`.
+- ✅ **In‑place editing** – overwrite files directly with `-i` / `--in-place`.
+- ✅ **Output directory** – write cleaned files to a separate folder, preserving the relative structure (`--output-dir`).
+- ✅ **Whitespace collapsing** – reduce consecutive blank lines to a desired maximum with `-c` / `--collapse-whitespace`.
+- ✅ **Diff mode** – see what would change without modifying files (`--diff`).
+- ✅ **Dry‑run** – preview which files would be processed (`--dry-run`).
+- ✅ **JSON output** – integrate with editors or build tools (`--json`).
+- ✅ **Configuration file** – store default options in a TOML file (`--config`).
+- ✅ **Force continue** – keep going even if some files fail (`-f` / `--force`).
+- ✅ **Custom thread count** – control parallelism (`--threads`).
+- ✅ **Verbose / quiet logging** – adjust output detail (`-v`, `-q`).
 
 ---
 
@@ -41,7 +43,7 @@ cargo binstall comment-remover
 cargo install comment-remover
 ```
 
-By default this installs a subset of languages (C, C++, Rust, JavaScript, Python).  
+By default this installs a **minimal set** of languages (C, C++, Rust, JavaScript, Python).  
 To get **all** languages, use `--all-features`:
 
 ```bash
@@ -66,40 +68,39 @@ cargo install comment-remover --features "javascript,typescript,c,cpp"
 git clone https://github.com/rhythmcache/comment-remover
 cd comment-remover
 cargo build --release
-# binary is at target/release/rmcm
+# binary is at target/release/comment-remover
+cargo install --path .
 ```
 
 ---
 
 ## Usage
 
-The binary is named **`rmcm`** (short for “remove comments”).
-
 ```bash
-rmcm [OPTIONS] [FILES]...
+comment-remover [OPTIONS] [FILES]...
 ```
 
 If no files are given, the tool reads from standard input (you **must** provide `--language` in that case).
 
 ### Options
 
-| Option                          | Description                                                                    |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| `-l, --language <LANG>`         | Force language (overrides auto‑detection). Required for stdin.                 |
-| `-i, --in-place`                | Edit files in‑place (overwrite original).                                      |
-| `-c, --collapse-whitespace <N>` | Keep at most `N` consecutive blank lines. Use `0` to remove all.               |
-| `-r, --recursive`               | Process directories recursively.                                               |
-| `--output-dir <DIR>`            | Write output to `DIR`, preserving relative paths (implies multiple files).     |
-| `--dry-run`                     | Only print what would be done, don’t write anything.                           |
-| `--diff`                        | Show unified diff instead of writing (implies `--dry-run`).                    |
-| `--threads <N>`                 | Number of parallel threads (default: number of CPU cores).                     |
-| `-v, --verbose`                 | Increase logging verbosity (`-v` for info, `-vv` for debug, `-vvv` for trace). |
-| `-q, --quiet`                   | Suppress all output except errors.                                             |
-| `--json`                        | Output results as JSON (for integration).                                      |
-| `--config <FILE>`               | Load settings from a TOML file (see [Configuration](#configuration)).          |
-| `-f, --force`                   | Continue processing if some files fail.                                        |
-| `-h, --help`                    | Print help.                                                                    |
-| `-V, --version`                 | Print version.                                                                 |
+| Option                          | Description                                                                                     |
+| ------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `-l, --language <LANG>`         | Force language (overrides auto‑detection). Required for stdin.                                  |
+| `-i, --in-place`                | Edit files in‑place (overwrite original).                                                       |
+| `-c, --collapse-whitespace <N>` | Keep at most `N` consecutive blank lines. Use `0` to remove all blank lines.                    |
+| `-r, --recursive`               | Process directories recursively.                                                                |
+| `--output-dir <DIR>`            | Write output to `DIR`, preserving relative paths (implies multiple files).                      |
+| `--dry-run`                     | Only print what would be done, don’t write anything.                                            |
+| `--diff`                        | Show unified diff instead of writing (implies `--dry-run`).                                     |
+| `--threads <N>`                 | Number of parallel threads (default: number of CPU cores).                                      |
+| `-v, --verbose`                 | Increase logging verbosity (`-v` for info, `-vv` for debug, `-vvv` for trace).                  |
+| `-q, --quiet`                   | Suppress all output except errors.                                                              |
+| `--json`                        | Output results as JSON (for integration).                                                       |
+| `--config <FILE>`               | Load settings from a TOML file (see [Configuration](#configuration)).                           |
+| `-f, --force`                   | Continue processing if some files fail.                                                         |
+| `-h, --help`                    | Print help.                                                                                     |
+| `-V, --version`                 | Print version.                                                                                  |
 
 ---
 
@@ -261,7 +262,7 @@ cargo install comment-remover --features "web,systems"
 
 ## Parallel Processing
 
-By default, `rmcm` uses all available CPU cores to process files concurrently.  
+By default, `comment-remover` uses all available CPU cores to process files concurrently.  
 You can control this with `--threads N`. The tool is I/O‑bound for many small files, but CPU‑bound for large files, so parallelism helps.
 
 ---
@@ -282,7 +283,7 @@ cargo build --release --all-features
 cargo build --release --features "python,rust-lang,sql"
 ```
 
-The binary will be at `target/release/rmcm`.
+The binary will be at `target/release/comment-remover`.
 
 ---
 
