@@ -5,12 +5,11 @@ use tree_sitter::{Query, QueryCursor, StreamingIterator};
 use crate::core::language::{COMMENT_QUERIES, TreeSitterLanguage};
 use crate::core::parser;
 use crate::core::whitespace::collapse_whitespace;
-use crate::error::{AppError, Result};
+use crate::error::{AppError, Result, io_error};
 
 #[derive(Debug, Clone)]
 pub struct CommentRemover {
     language: TreeSitterLanguage,
-
     collapse: Option<usize>,
 }
 
@@ -21,7 +20,6 @@ impl CommentRemover {
 
     pub fn process_str(&self, input: &str) -> Result<String> {
         let tree = parser::parse(input, self.language)?;
-
         let query_str = COMMENT_QUERIES
             .get(&self.language)
             .ok_or_else(|| AppError::UnsupportedLanguage(format!("{:?}", self.language)))?;
@@ -33,7 +31,7 @@ impl CommentRemover {
         let mut cursor = QueryCursor::new();
         let mut matches = cursor.matches(&query, tree.root_node(), input.as_bytes());
 
-        let mut comment_ranges = Vec::new();
+        let mut comment_ranges: Vec<std::ops::Range<usize>> = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
                 comment_ranges.push(capture.node.byte_range());
@@ -47,14 +45,9 @@ impl CommentRemover {
         for range in comment_ranges {
             result.push_str(&input[last_pos..range.start]);
 
-            for ch in input[range.clone()].chars() {
-                if ch == '\n' {
-                    result.push('\n');
-                }
-            }
+            result.extend(input[range.clone()].chars().filter(|&c| c == '\n'));
             last_pos = range.end;
         }
-
         result.push_str(&input[last_pos..]);
 
         if let Some(max) = self.collapse {
@@ -65,7 +58,7 @@ impl CommentRemover {
     }
 
     pub fn process_file(&self, path: &Path) -> Result<String> {
-        let content = fs::read_to_string(path).map_err(AppError::Io)?;
+        let content = fs::read_to_string(path).map_err(|e| io_error(path, e))?;
         self.process_str(&content)
     }
 }
