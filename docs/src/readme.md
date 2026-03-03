@@ -1,29 +1,31 @@
 # Comment Remover
 
-A fast, accurate command-line tool to strip comments from source code using [tree‑sitter](https://tree-sitter.github.io/).  
-It supports **dozens of languages**, works on single files or whole directories, and can run in parallel for maximum speed.
-
 [![Crates.io](https://img.shields.io/crates/v/comment-remover.svg)](https://crates.io/crates/comment-remover)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
+**comment-remover** is a fast, accurate command-line tool that strips comments from source code using [tree‑sitter](https://tree-sitter.github.io/).  
+It supports **dozens of programming languages**, works on single files or whole directories, and runs in parallel for maximum performance. The binary is named `rmcm`.
+
+Whether you need to clean up code before analysis, minify sources, or simply remove clutter, `rmcm` does the job safely – comments inside strings or literals are never touched.
 
 ---
 
 ## Features
 
-- ✅ **Accurate comment removal** – uses tree‑sitter’s precise syntax trees, so comments inside strings or literals are never touched.
-- ✅ **40+ languages** – from C, Rust, Python to SQL, TOML, and even INI files. Enable only what you need (feature flags).
-- ✅ **Parallel processing** – automatically uses all CPU cores (configurable with `--threads`).
-- ✅ **Recursive directory traversal** – process entire source trees with `-r` / `--recursive`.
-- ✅ **In‑place editing** – overwrite files directly with `-i` / `--in-place`.
-- ✅ **Output directory** – write cleaned files to a separate folder, preserving the relative structure (`--output-dir`).
-- ✅ **Whitespace collapsing** – reduce consecutive blank lines to a desired maximum with `-c` / `--collapse-whitespace`.
-- ✅ **Diff mode** – see what would change without modifying files (`--diff`).
-- ✅ **Dry‑run** – preview which files would be processed (`--dry-run`).
-- ✅ **JSON output** – integrate with editors or build tools (`--json`).
-- ✅ **Configuration file** – store default options in a TOML file (`--config`).
-- ✅ **Force continue** – keep going even if some files fail (`-f` / `--force`).
-- ✅ **Custom thread count** – control parallelism (`--threads`).
-- ✅ **Verbose / quiet logging** – adjust output detail (`-v`, `-q`).
+- [x] **Syntax‑aware removal** – Uses precise tree‑sitter grammars; never mistakes a string for a comment.
+- [x] **40+ languages** – Enable only the ones you need (each language is an optional Cargo feature).
+- [x] **Parallel processing** – Automatically uses all CPU cores (configurable with `--threads`).
+- [x] **Recursive directory traversal** – Process entire source trees with `-r` / `--recursive`.
+- [x] **In‑place editing** – Overwrite files directly with `-i` / `--in-place`.
+- [x] **Output directory** – Write cleaned files to a separate folder while preserving the relative structure (`--output-dir`).
+- [x] **Whitespace collapsing** – Reduce consecutive blank lines to a desired maximum (`-c N`).
+- [x] **Diff mode** – See what would change without modifying files (`--diff`).
+- [x] **Dry‑run** – Preview which files would be processed (`--dry-run`).
+- [x] **JSON output** – Integrate with editors or build tools (`--json`).
+- [x] **Configuration file** – Store default options in a TOML file (`--config`).
+- [x] **Force continue** – Keep going even if some files fail (`-f` / `--force`).
+- [x] **Custom thread count** – Control parallelism (`--threads`).
+- [x] **Verbose / quiet logging** – Adjust output detail (`-v`, `-q`).
 
 ---
 
@@ -31,7 +33,7 @@ It supports **dozens of languages**, works on single files or whole directories,
 
 ### Quick install with `cargo binstall`
 
-If you have [cargo-binstall](https://github.com/cargo-bins/cargo-binstall):
+If you have [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) installed:
 
 ```bash
 cargo binstall comment-remover
@@ -43,14 +45,14 @@ cargo binstall comment-remover
 cargo install comment-remover
 ```
 
-By default this installs a **minimal set** of languages (C, C++, Rust, JavaScript, Python).  
+By default this installs a **minimal set** of languages: C, C++, Rust, JavaScript, Python (the `default` feature).  
 To get **all** languages, use `--all-features`:
 
 ```bash
 cargo install comment-remover --all-features
 ```
 
-Or select exactly the languages you need (smaller binary):
+Or select exactly the languages you need (results in a smaller binary):
 
 ```bash
 # Example: Python and Rust only
@@ -60,7 +62,7 @@ cargo install comment-remover --features "python,rust-lang"
 cargo install comment-remover --features "javascript,typescript,c,cpp"
 ```
 
-> All available feature flags are listed in the [Language Support](#language-support) section.
+After installation, the binary `rmcm` will be available in your `PATH`.
 
 ### Build from the repository
 
@@ -68,7 +70,8 @@ cargo install comment-remover --features "javascript,typescript,c,cpp"
 git clone https://github.com/rhythmcache/comment-remover
 cd comment-remover
 cargo build --release
-# binary is at target/release/comment-remover
+# binary is at target/release/rmcm
+# Optionally install it:
 cargo install --path .
 ```
 
@@ -77,7 +80,7 @@ cargo install --path .
 ## Usage
 
 ```bash
-comment-remover [OPTIONS] [FILES]...
+rmcm [OPTIONS] [FILES]...
 ```
 
 If no files are given, the tool reads from standard input (you **must** provide `--language` in that case).
@@ -102,11 +105,9 @@ If no files are given, the tool reads from standard input (you **must** provide 
 | `-h, --help`                    | Print help.                                                                                     |
 | `-V, --version`                 | Print version.                                                                                  |
 
----
+### Examples
 
-## Examples
-
-### Basic file processing
+#### Basic file processing
 
 ```bash
 # Remove comments from a Rust file, print to stdout
@@ -116,59 +117,59 @@ rmcm main.rs
 rmcm -i *.js
 ```
 
-### Recursive directory
+#### Recursive directory
 
 ```bash
 # Remove comments from all Python files in src/ (and subdirectories)
 rmcm -r -i src/
 ```
 
-### Output directory
+#### Output directory
 
 ```bash
 # Clean all C++ files in current directory, write results to ./cleaned/
 rmcm --output-dir ./cleaned/ *.cpp
 ```
 
-### Stdin
+#### Stdin
 
 ```bash
 # Read from stdin, specify language, print cleaned result
 cat messy.py | rmcm -l python
 ```
 
-### Whitespace collapsing
+#### Whitespace collapsing
 
 ```bash
 # After removing comments, keep at most 1 blank line
 rmcm -c 1 -i script.js
 ```
 
-### Diff mode (see changes without modifying)
+#### Diff mode (see changes without modifying)
 
 ```bash
 rmcm --diff main.rs
 ```
 
-### Dry run
+#### Dry run
 
 ```bash
 rmcm --dry-run -r src/
 ```
 
-### JSON output (for scripts/editors)
+#### JSON output (for scripts/editors)
 
 ```bash
 rmcm --json -r src/ > result.json
 ```
 
-### Force continue on errors
+#### Force continue on errors
 
 ```bash
 rmcm -f -i *.rs   # keep going even if some files fail
 ```
 
-### Custom thread count
+#### Custom thread count
 
 ```bash
 rmcm --threads 2 -r src/   # use only 2 threads
@@ -178,8 +179,8 @@ rmcm --threads 2 -r src/   # use only 2 threads
 
 ## Configuration
 
-You can store default options in a TOML file (e.g., `.rmcm.toml` in your project root).  
-Specify it with `--config` or let the tool look for it? Currently you must pass `--config`.
+You can store default options in a TOML file (e.g., `.rmcm.toml` in your project root) and pass it with `--config`.  
+CLI flags **override** the values from the configuration file.
 
 **Example `.rmcm.toml`**:
 
@@ -191,26 +192,26 @@ output_dir = "cleaned"
 threads = 4
 ```
 
-CLI flags **override** the configuration file.
+Then run:
 
----
+```bash
+rmcm --config .rmcm.toml src/
+```
 
-## Output Modes
+All fields are optional. The available fields match the long option names:
 
-The tool handles output in several ways:
-
-1. **Single file to stdout** – default when exactly one file is given and neither `--in-place` nor `--output-dir` is used.
-2. **In‑place** – `-i` overwrites the original file.
-3. **Output directory** – `--output-dir DIR` writes files into `DIR`, preserving relative paths.
-4. **Diff / Dry‑run** – no files are written; a diff or log is shown.
-5. **JSON** – when `--json` is used, the tool prints a summary (for multiple files) or the cleaned content wrapped in JSON (for stdin). The summary contains counts of successes and failures.
+- `language` – string
+- `collapse_whitespace` – integer
+- `recursive` – boolean
+- `output_dir` – string (path)
+- `threads` – integer
 
 ---
 
 ## Language Support
 
-Each language is an **optional feature** – enable only the ones you need to keep the binary small.  
-The table shows the feature flag, common file extensions, and the comment styles that are removed.
+Each language is an **optional feature**. Enable only the ones you need to keep the binary small.  
+The table below shows the feature flag, common file extensions, and the comment styles that are removed.
 
 | Language   | Feature Flag | Extensions                                    | Comment Styles          |
 | ---------- | ------------ | --------------------------------------------- | ----------------------- |
@@ -252,7 +253,7 @@ For convenience, you can enable groups of related languages:
 - `dotnet` – `c-sharp`
 - `all` – everything listed above
 
-Example:
+Example installation with groups:
 
 ```bash
 cargo install comment-remover --features "web,systems"
@@ -260,9 +261,21 @@ cargo install comment-remover --features "web,systems"
 
 ---
 
+## Output Modes
+
+The tool handles output in several ways:
+
+1. **Single file to stdout** – default when exactly one file is given and neither `--in-place` nor `--output-dir` is used.
+2. **In‑place** – `-i` overwrites the original file.
+3. **Output directory** – `--output-dir DIR` writes files into `DIR`, preserving relative paths. Directories are created automatically.
+4. **Diff / Dry‑run** – no files are written; a diff or log is shown.
+5. **JSON** – when `--json` is used, the tool prints a summary (for multiple files) or the cleaned content wrapped in JSON (for stdin). The summary contains counts of successes and failures.
+
+---
+
 ## Parallel Processing
 
-By default, `comment-remover` uses all available CPU cores to process files concurrently.  
+By default, `rmcm` uses all available CPU cores to process files concurrently.  
 You can control this with `--threads N`. The tool is I/O‑bound for many small files, but CPU‑bound for large files, so parallelism helps.
 
 ---
@@ -283,27 +296,42 @@ cargo build --release --all-features
 cargo build --release --features "python,rust-lang,sql"
 ```
 
-The binary will be at `target/release/comment-remover`.
+The binary will be at `target/release/rmcm`. You can copy it to a directory in your `PATH`.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Whether it’s a bug report, a new language grammar, a feature request, or a pull request – feel free to open an issue or PR.
+Contributions are welcome! Whether it’s a bug report, a new language grammar, a feature request, or a pull request – feel free to open an [issue](https://github.com/rhythmcache/comment-remover/issues) or PR.
 
 Some ideas for contributions:
 
-- [ ] Add more tree‑sitter grammars (Kotlin, Julia, …)
-- [ ] Improve comment queries for existing languages
-- [ ] Add a `--preserve` flag to keep comments matching a pattern (e.g., license headers)
-- [ ] Implement comment extraction (instead of removal)
-- [ ] Add glob support for input files (currently the shell expands globs)
+- Add more tree‑sitter grammars (Kotlin, Julia, …)
+- Improve comment queries for existing languages
+- Add a `--preserve` flag to keep comments matching a pattern (e.g., license headers)
+- Implement comment extraction (instead of removal)
+- Add glob support for input files (currently the shell expands globs)
 
 See the [open issues](https://github.com/rhythmcache/comment-remover/issues) for more.
+
+For detailed information about the codebase and how to add a new language, please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+
+---
+
+## Documentation
+
+For more detailed documentation (including API docs and design notes), check out the [mdBook documentation](https://github.com/rhythmcache/comment-remover/tree/main/docs).  
+You can build it locally with:
+
+```bash
+cd docs
+mdbook build
+open book/index.html   # or serve with `mdbook serve`
+```
 
 ---
 
 ## License
 
 This project is licensed under the Apache License, Version 2.0.  
-See [LICENSE](LICENSE) for details.
+See the [LICENSE](./license.md) file for details.
