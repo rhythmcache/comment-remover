@@ -134,6 +134,10 @@ pub struct Cli {
     /// "No files processed" error when all files fail.
     #[arg(short, long)]
     pub force: bool,
+
+    /// List all languages supported in this build and exit.
+    #[arg(long)]
+    pub list_languages: bool,
 }
 
 impl Cli {
@@ -157,6 +161,12 @@ impl Cli {
     /// * Other errors as documented.
     pub fn run(self) -> Result<()> {
         setup_logging(self.verbose, self.quiet);
+
+        if self.list_languages {
+            let langs = TreeSitterLanguage::supported();
+            println!("{}", langs.join("\n"));
+            return Ok(());
+        }
 
         let config = if let Some(path) = &self.config {
             let cfg = Config::from_file(path)?;
