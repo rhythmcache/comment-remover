@@ -99,12 +99,21 @@ If no files are given, the tool reads from standard input (you **must** provide 
 | `--json`                        | Output results as JSON (for integration).                                                       |
 | `--config <FILE>`               | Load settings from a TOML file (see [Configuration](#configuration)).                           |
 | `-f, --force`                   | Continue processing if some files fail.                                                         |
+| `--list-languages`              | Print all languages supported in this build, comma-separated, then exit.                        |
 | `-h, --help`                    | Print help.                                                                                     |
 | `-V, --version`                 | Print version.                                                                                  |
 
 ---
 
 ## Examples
+
+### List supported languages
+
+```bash
+# Show which languages are included in the compiled binary
+rmcm --list-languages
+# Example output: c,c++,javascript,python,rust
+```
 
 ### Basic file processing
 
