@@ -48,13 +48,13 @@ tree-sitter-scala = { version = "0.24.0", optional = true }
 tree-sitter-swift = { version = "0.7.1", optional = true }
 tree-sitter-typescript = { version = "0.23.2", optional = true }
 
-tree-sitter-dart = { version = "0.0.4", optional = true }
+tree-sitter-dart = { version = "0.2.0", optional = true }
 tree-sitter-elixir = { version = "0.3.4", optional = true }
 tree-sitter-ini = { version = "1.4.0", optional = true }
 tree-sitter-perl = { version = "1.1.2", optional = true }
 tree-sitter-r = { version = "1.2.0", optional = true }
-tree-sitter-sql = { version = "0.0.2", optional = true }
-tree-sitter-toml = { version = "0.20.0", optional = true }
+tree-sitter-sql = { package = "tree-sitter-sequel", version = "0.3.11", optional = true }
+tree-sitter-toml = { package = "tree-sitter-toml-ng", version = "0.7.0", optional = true }
 anyhow = "1.0.102"
 walkdir = "2.5.0"
 tempfile = "3.26.0"

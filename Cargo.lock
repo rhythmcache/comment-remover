@@ -190,7 +190,7 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-subscriber",
- "tree-sitter 0.26.6",
+ "tree-sitter",
  "tree-sitter-bash",
  "tree-sitter-c",
  "tree-sitter-c-sharp",
@@ -212,9 +212,9 @@ dependencies = [
  "tree-sitter-ruby",
  "tree-sitter-rust",
  "tree-sitter-scala",
- "tree-sitter-sql",
+ "tree-sitter-sequel",
  "tree-sitter-swift",
- "tree-sitter-toml",
+ "tree-sitter-toml-ng",
  "tree-sitter-typescript",
  "walkdir",
 ]
@@ -884,26 +884,6 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter"
-version = "0.19.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad726ec26496bf4c083fff0f43d4eb3a2ad1bba305323af5ff91383c0b6ecac0"
-dependencies = [
- "cc",
- "regex",
-]
-
-[[package]]
-name = "tree-sitter"
-version = "0.20.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e747b1f9b7b931ed39a548c1fae149101497de3c1fc8d9e18c62c1a66c683d3d"
-dependencies = [
- "cc",
- "regex",
-]
-
-[[package]]
-name = "tree-sitter"
 version = "0.26.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13f456d2108c3fef07342ba4689a8503ec1fb5beed245e2b9be93096ef394848"
@@ -968,12 +948,12 @@ dependencies = [
 
 [[package]]
 name = "tree-sitter-dart"
-version = "0.0.4"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19f1f70b80ce41343e14aafcef67b5ba2e9de89587535b4aabbabb8036f4e38a"
+checksum = "325dd1e24ee9ee21111e9c43680ae7d6010aaa9f282b048a99b9c7163c1cf553"
 dependencies = [
  "cc",
- "tree-sitter 0.26.6",
+ "tree-sitter-language",
 ]
 
 [[package]]
@@ -1069,7 +1049,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e79d4ae71b42e595c24c354b59905ade8162bd400ebc53ab916ea8aec54da92d"
 dependencies = [
  "cc",
- "tree-sitter 0.26.6",
+ "tree-sitter",
  "tree-sitter-language",
 ]
 
@@ -1134,13 +1114,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "tree-sitter-sql"
-version = "0.0.2"
+name = "tree-sitter-sequel"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04e4fb372576528153a04f47ff3ca2d2b535b756ec1890c42ddd5713a66cc82e"
+checksum = "9d198ad3c319c02e43c21efa1ec796b837afcb96ffaef1a40c1978fbdcec7d17"
 dependencies = [
  "cc",
- "tree-sitter 0.19.5",
+ "tree-sitter-language",
 ]
 
 [[package]]
@@ -1154,13 +1134,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "tree-sitter-toml"
-version = "0.20.0"
+name = "tree-sitter-toml-ng"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ca517f578a98b23d20780247cc2688407fa81effad5b627a5a364ec3339b53e8"
+checksum = "e9adc2c898ae49730e857d75be403da3f92bb81d8e37a2f918a08dd10de5ebb1"
 dependencies = [
  "cc",
- "tree-sitter 0.20.10",
+ "tree-sitter-language",
 ]
 
 [[package]]
