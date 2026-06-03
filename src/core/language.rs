@@ -238,6 +238,8 @@ impl TreeSitterLanguage {
             Self::Toml => tree_sitter_toml::LANGUAGE.into(),
             #[cfg(feature = "ini")]
             Self::Ini => tree_sitter_ini::LANGUAGE.into(),
+            #[allow(unreachable_patterns)]
+            _ => unreachable!(),
         }
     }
 
@@ -342,6 +344,7 @@ impl TreeSitterLanguage {
     /// println!("Supported languages: {}", supported.join(", "));
     /// ```
     pub fn supported() -> Vec<&'static str> {
+        #[allow(unused_mut)]
         let mut v = Vec::new();
         #[cfg(feature = "bash")]
         v.push("bash");
@@ -479,6 +482,7 @@ impl TreeSitterLanguage {
 /// assert!(rust_query.contains("line_comment") || rust_query.contains("comment"));
 /// ```
 pub static COMMENT_QUERIES: Lazy<HashMap<TreeSitterLanguage, &'static str>> = Lazy::new(|| {
+    #[allow(unused_mut)]
     let mut m = HashMap::new();
 
     #[cfg(feature = "bash")]
