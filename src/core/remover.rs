@@ -38,12 +38,70 @@
 
 use std::fs;
 use std::path::Path;
+use regex::Regex;
 use tree_sitter::{Query, QueryCursor, StreamingIterator};
 
 use crate::core::language::{COMMENT_QUERIES, TreeSitterLanguage};
 use crate::core::parser;
 use crate::core::whitespace::collapse_whitespace;
 use crate::error::{AppError, Result, io_error};
+
+/// Comments matching any of these patterns are always kept, on top of
+/// whatever `--keep-pattern`/config supplies. These are lexically comments
+/// but carry real compiler/tool semantics in their respective ecosystems --
+/// removing them silently changes program or build behavior, not just
+/// documentation. A tree-sitter comment query has no way to tell the two
+/// apart on its own, so this list exists to cover the common cases without
+/// requiring every caller to know and pass them explicitly.
+pub const DEFAULT_KEEP_PATTERNS: &[&str] = &[
+    r"@ts-expect-error",
+    r"@ts-ignore",
+    r"@ts-nocheck",
+    r"eslint-disable",
+    r"@vitest-environment",
+    r"@vite-ignore",
+    r"webpackChunkName",
+    r"webpackPrefetch",
+    r"webpackPreload",
+    r"istanbul ignore",
+    r"prettier-ignore",
+    r"^///\s*<reference\b",
+    r"^//\s*#!\[allow\(",
+    r"^#\[allow\(",
+    r"^#!\[allow\(",
+    r"\bSAFETY:",
+    r"deno-lint",
+    r"pragma\s+solidity",
+    r"^#\s*type:\s*ignore",
+    r"^#\s*noqa\b",
+    r"^#\s*pylint:\s*disable",
+];
+
+/// Compiles `DEFAULT_KEEP_PATTERNS` plus any caller-supplied extra patterns
+/// into a single `Regex` list. Returns an error string (not `AppError`, to
+/// keep this module free of a dependency edge back onto CLI-facing error
+/// variants) naming the first pattern that fails to compile, so a typo in
+/// `--keep-pattern` is reported clearly instead of silently doing nothing.
+///
+/// # Examples
+/// ```
+/// use comment_remover::core::remover::{compile_keep_patterns, DEFAULT_KEEP_PATTERNS};
+///
+/// let patterns = compile_keep_patterns(&["TODO".to_string()]).unwrap();
+/// assert_eq!(patterns.len(), DEFAULT_KEEP_PATTERNS.len() + 1);
+/// assert!(patterns.iter().any(|p| p.is_match("@ts-expect-error")));
+/// assert!(patterns.iter().any(|p| p.is_match("TODO: fix this")));
+///
+/// assert!(compile_keep_patterns(&["(".to_string()]).is_err());
+/// ```
+pub fn compile_keep_patterns(extra: &[String]) -> std::result::Result<Vec<Regex>, String> {
+    DEFAULT_KEEP_PATTERNS
+        .iter()
+        .map(|p| (*p).to_string())
+        .chain(extra.iter().cloned())
+        .map(|p| Regex::new(&p).map_err(|e| format!("invalid --keep-pattern {p:?}: {e}")))
+        .collect()
+}
 
 /// A comment remover configured for a specific language and optional whitespace
 /// collapsing.
@@ -64,9 +122,23 @@ use crate::error::{AppError, Result, io_error};
 pub struct CommentRemover {
     language: TreeSitterLanguage,
     collapse: Option<usize>,
+    keep_patterns: Vec<Regex>,
 }
 
 impl CommentRemover {
+    /// Same as [`new`](Self::new), but comments matching any of
+    /// `keep_patterns` are left in place instead of removed. Callers
+    /// wanting the built-in directive-comment protections
+    /// (`@ts-expect-error`, `eslint-disable`, `/// <reference>`, ...) should
+    /// build `keep_patterns` via [`compile_keep_patterns`], not duplicate
+    /// [`DEFAULT_KEEP_PATTERNS`] by hand.
+    pub fn with_keep_patterns(
+        language: TreeSitterLanguage,
+        collapse: Option<usize>,
+        keep_patterns: Vec<Regex>,
+    ) -> Self {
+        Self { language, collapse, keep_patterns }
+    }
     /// Creates a new `CommentRemover` for the given language.
     ///
     /// # Arguments
@@ -87,7 +159,7 @@ impl CommentRemover {
     /// let remover = CommentRemover::new(TreeSitterLanguage::Rust, Some(1));
     /// ```
     pub fn new(language: TreeSitterLanguage, collapse: Option<usize>) -> Self {
-        Self { language, collapse }
+        Self { language, collapse, keep_patterns: Vec::new() }
     }
 
     /// Removes comments from a source code string.
@@ -136,7 +208,12 @@ impl CommentRemover {
         let mut comment_ranges: Vec<std::ops::Range<usize>> = Vec::new();
         while let Some(m) = matches.next() {
             for capture in m.captures {
-                comment_ranges.push(capture.node.byte_range());
+                let range = capture.node.byte_range();
+                let text = &input[range.clone()];
+                if self.keep_patterns.iter().any(|p| p.is_match(text)) {
+                    continue;
+                }
+                comment_ranges.push(range);
             }
         }
 
@@ -186,5 +263,43 @@ impl CommentRemover {
     pub fn process_file(&self, path: &Path) -> Result<String> {
         let content = fs::read_to_string(path).map_err(|e| io_error(path, e))?;
         self.process_str(&content)
+    }
+}
+
+#[cfg(all(test, feature = "rust-lang"))]
+mod keep_pattern_tests {
+    use super::*;
+
+    #[test]
+    fn plain_comment_is_removed_directive_comment_is_kept() {
+        let input = "// plain noise\n// SAFETY: caller upholds the invariant\nfn f() {}";
+        let patterns = compile_keep_patterns(&[]).unwrap();
+        let remover = CommentRemover::with_keep_patterns(TreeSitterLanguage::Rust, None, patterns);
+        let out = remover.process_str(input).unwrap();
+        assert!(!out.contains("plain noise"), "non-matching comment must still be removed: {out:?}");
+        assert!(out.contains("SAFETY: caller upholds the invariant"), "SAFETY comment must survive: {out:?}");
+    }
+
+    #[test]
+    fn no_keep_patterns_removes_everything_same_as_before() {
+        let input = "// SAFETY: this would normally be protected\nfn f() {}";
+        let remover = CommentRemover::new(TreeSitterLanguage::Rust, None);
+        let out = remover.process_str(input).unwrap();
+        assert!(!out.contains("SAFETY"), "with no keep_patterns, behavior must match the pre-existing new(): {out:?}");
+    }
+
+    #[test]
+    fn extra_pattern_protects_a_project_specific_marker() {
+        let input = "// KEEP-ME: project marker\n// drop this one\nfn f() {}";
+        let patterns = compile_keep_patterns(&["KEEP-ME".to_string()]).unwrap();
+        let remover = CommentRemover::with_keep_patterns(TreeSitterLanguage::Rust, None, patterns);
+        let out = remover.process_str(input).unwrap();
+        assert!(out.contains("KEEP-ME: project marker"), "custom --keep-pattern must be honored: {out:?}");
+        assert!(!out.contains("drop this one"), "unmatched comment must still be removed: {out:?}");
+    }
+
+    #[test]
+    fn invalid_pattern_reports_an_error_not_a_silent_skip() {
+        assert!(compile_keep_patterns(&["(unclosed".to_string()]).is_err());
     }
 }

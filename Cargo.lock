@@ -179,6 +179,7 @@ dependencies = [
  "once_cell",
  "predicates",
  "rayon",
+ "regex",
  "serde",
  "serde_json",
  "similar",
