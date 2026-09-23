@@ -138,6 +138,19 @@ pub struct Cli {
     /// List all languages supported in this build, comma-separated, then exit.
     #[arg(long)]
     pub list_languages: bool,
+
+    /// Extra regex pattern to keep -- a comment matching it is left in
+    /// place instead of removed. Repeatable. Applies on top of the
+    /// built-in directive-comment protections (see
+    /// `--no-default-keep-patterns`).
+    #[arg(long = "keep-pattern", value_name = "REGEX")]
+    pub keep_pattern: Vec<String>,
+
+    /// Disable the built-in default keep-patterns
+    /// (`@ts-expect-error`, `eslint-disable`, `/// <reference>`, `SAFETY:`,
+    /// ...). Only `--keep-pattern`/config `keep_patterns` apply if set.
+    #[arg(long)]
+    pub no_default_keep_patterns: bool,
 }
 
 impl Cli {
@@ -190,6 +203,8 @@ impl Cli {
                 self.diff,
                 self.json,
                 self.force,
+                self.keep_pattern.clone(),
+                self.no_default_keep_patterns,
             )
         } else {
             ResolvedConfig {
@@ -203,6 +218,8 @@ impl Cli {
                 diff: self.diff,
                 json: self.json,
                 force: self.force,
+                keep_patterns: self.keep_pattern.clone(),
+                default_keep_patterns: !self.no_default_keep_patterns,
             }
         };
 
@@ -250,6 +267,8 @@ impl Cli {
             .build()
             .map_err(|e| AppError::Config(format!("Failed to create thread pool: {}", e)))?;
 
+        let keep_patterns = resolve_keep_patterns(&resolved)?;
+
         let processor_cfg = Arc::new(ProcessorConfig {
             language_override,
             collapse: resolved.collapse,
@@ -258,6 +277,7 @@ impl Cli {
             dry_run: resolved.dry_run,
             diff: resolved.diff,
             to_stdout,
+            keep_patterns,
         });
 
         // Sekarang self masih utuh, bisa dipinjam di closure
@@ -303,7 +323,7 @@ impl Cli {
         let buffer = read_stdin().map_err(|e| io_error("<stdin>", e))?;
         debug!("Read {} bytes from stdin", buffer.len());
 
-        let remover = CommentRemover::new(lang, resolved.collapse);
+        let remover = CommentRemover::with_keep_patterns(lang, resolved.collapse, resolve_keep_patterns(resolved)?);
         let output = remover.process_str(&buffer)?;
 
         if resolved.json {
@@ -336,7 +356,7 @@ impl Cli {
                 .ok_or_else(|| AppError::UnsupportedLanguage(path.display().to_string()))?
         };
 
-        let remover = CommentRemover::new(language, cfg.collapse);
+        let remover = CommentRemover::with_keep_patterns(language, cfg.collapse, cfg.keep_patterns.clone());
         let input = read_file(path)?;
         let output = remover.process_str(&input)?;
 
@@ -412,6 +432,26 @@ struct ProcessorConfig {
     diff: bool,
     /// If true, output goes to stdout (only for single file).
     to_stdout: bool,
+    /// Compiled keep-patterns (defaults + `--keep-pattern`), shared across
+    /// all parallel workers -- compiled once up front rather than per file.
+    keep_patterns: Vec<regex::Regex>,
+}
+
+/// Compiles `resolved`'s keep-patterns (built-in defaults, unless disabled
+/// by `--no-default-keep-patterns`, plus any `--keep-pattern`/config
+/// extras) into a single `Regex` list, or an `AppError::Config` naming the
+/// first invalid pattern.
+fn resolve_keep_patterns(resolved: &ResolvedConfig) -> Result<Vec<regex::Regex>> {
+    if resolved.default_keep_patterns {
+        crate::core::remover::compile_keep_patterns(&resolved.keep_patterns).map_err(AppError::Config)
+    } else {
+        resolved
+            .keep_patterns
+            .iter()
+            .map(|p| regex::Regex::new(p).map_err(|e| format!("invalid --keep-pattern {p:?}: {e}")))
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .map_err(AppError::Config)
+    }
 }
 
 /// Reads all data from standard input into a string.

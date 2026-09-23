@@ -35,6 +35,8 @@
 //!     true,                       // cli_diff
 //!     false,                      // cli_json
 //!     false,                      // cli_force
+//!     Vec::new(),                  // cli_keep_patterns
+//!     false,                      // cli_no_default_keep_patterns
 //! );
 //! ```
 
@@ -76,6 +78,17 @@ pub struct Config {
     /// Number of threads to use for parallel processing.
     /// If not specified, the number of CPU cores is used.
     pub threads: Option<usize>,
+
+    /// Extra regex patterns (on top of [`crate::core::remover::DEFAULT_KEEP_PATTERNS`])
+    /// whose matching comments are left in place instead of removed.
+    pub keep_patterns: Option<Vec<String>>,
+
+    /// If `Some(false)`, disables the built-in
+    /// [`crate::core::remover::DEFAULT_KEEP_PATTERNS`] (directive comments
+    /// like `@ts-expect-error`, `eslint-disable`, `/// <reference>`), so
+    /// only `keep_patterns` above apply. Defaults to `true` (enabled) when
+    /// unset.
+    pub default_keep_patterns: Option<bool>,
 }
 
 impl Config {
@@ -145,6 +158,8 @@ impl Config {
     ///     recursive: Some(false),
     ///     output_dir: None,
     ///     threads: None,
+    ///     keep_patterns: None,
+    ///     default_keep_patterns: None,
     /// };
     ///
     /// let resolved = file_cfg.merge_with_cli(
@@ -157,6 +172,8 @@ impl Config {
     ///     false,
     ///     false,
     ///     false,
+    ///     false,
+    ///     Vec::new(),
     ///     false,
     /// );
     ///
@@ -176,7 +193,16 @@ impl Config {
         cli_diff: bool,
         cli_json: bool,
         cli_force: bool,
+        cli_keep_patterns: Vec<String>,
+        cli_no_default_keep_patterns: bool,
     ) -> ResolvedConfig {
+        let mut keep_patterns = self.keep_patterns.clone().unwrap_or_default();
+        keep_patterns.extend(cli_keep_patterns);
+        let default_keep_patterns = if cli_no_default_keep_patterns {
+            false
+        } else {
+            self.default_keep_patterns.unwrap_or(true)
+        };
         ResolvedConfig {
             language: cli_language.or_else(|| self.language.clone()),
             collapse: cli_collapse.or(self.collapse_whitespace),
@@ -188,6 +214,8 @@ impl Config {
             diff: cli_diff,
             json: cli_json,
             force: cli_force,
+            keep_patterns,
+            default_keep_patterns,
         }
     }
 }
@@ -236,4 +264,13 @@ pub struct ResolvedConfig {
     /// If true, continue processing even if some files fail, and suppress the
     /// "No files processed" error when all files fail.
     pub force: bool,
+
+    /// Extra regex patterns, on top of the built-in defaults (unless
+    /// disabled by `default_keep_patterns`), whose matching comments are
+    /// kept instead of removed.
+    pub keep_patterns: Vec<String>,
+
+    /// Whether the built-in `DEFAULT_KEEP_PATTERNS` apply on top of
+    /// `keep_patterns`.
+    pub default_keep_patterns: bool,
 }
